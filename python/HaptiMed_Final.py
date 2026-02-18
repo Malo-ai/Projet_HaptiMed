@@ -12,7 +12,7 @@ from PyQt6.QtMultimedia import QSoundEffect
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "0"
 os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "0"
 
-# 5 Niveaux de difficulté (Rayon, Largeur)
+# 5 Niveaux de difficulté géométrique
 TUNNEL_LEVELS = [
     {"R": 250, "W": 100}, # Très facile
     {"R": 400, "W": 100}, # Facile
@@ -21,9 +21,11 @@ TUNNEL_LEVELS = [
     {"R": 400, "W": 30}   # Très difficile
 ]
 
+# Calcul automatique et infaillible du chemin vers data/raw
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 CONFIG = {
-    # Ce code calcule automatiquement le chemin vers le dossier data/raw
-    "SAVE_PATH": os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "raw")),
+    "SAVE_PATH": os.path.join(BASE_DIR, "data", "raw"),
     "TARGET_RAW": 3200,   
     "FORCE_TOLERANCE_PCT": 5, 
     "RAW_MAX": 8192,
@@ -32,7 +34,7 @@ CONFIG = {
     "TEMPS_MAX_ESSAI": 15,
     "TEMPS_REPOS": 5,     
     "TEMPS_PAUSE_LONGUE": 30, 
-    "REPS_PER_ID": 2,
+    "REPS_PER_ID": 2,     # 2 rep * 5 niveaux = 10 essais
     "STATIONARY_DELAY": 0.5,
     "VELOCITY_THRESHOLD": 10.0
 }
@@ -84,7 +86,9 @@ class SteeringExpe(QWidget):
         self.buffer_raw = []
         self.current_trajectory = [] 
         
-        # PLAN EXPÉRIMENTAL RANDOMISÉ
+        # ==========================================================
+        # PLAN EXPÉRIMENTAL (Randomisation et Numérotation propre)
+        # ==========================================================
         self.sequence = []
         conditions = [("VP", False), ("VP", True), ("FVP", False), ("FVP", True)]
         random.shuffle(conditions) 
@@ -95,9 +99,15 @@ class SteeringExpe(QWidget):
                 for rep in range(CONFIG["REPS_PER_ID"]):
                     essais_bloc.append({
                         "Task": task, "Feedback": fb, "IDc_Level": idc_level + 1,
-                        "R": params["R"], "W": params["W"], "Rep": rep + 1
+                        "R": params["R"], "W": params["W"], "Rep_Geo": rep + 1
                     })
+            # On randomise la géométrie
             random.shuffle(essais_bloc) 
+            
+            # MAIS on attribue un numéro d'ordre propre (1 à 10) pour l'affichage au sujet
+            for index, essai in enumerate(essais_bloc):
+                essai["Trial_in_Block"] = index + 1
+                
             self.sequence.extend(essais_bloc)
 
         self.seq_index = 0
@@ -111,6 +121,31 @@ class SteeringExpe(QWidget):
         self.pos = e.position()
         e.accept()
 
+    def get_pointer_color(self, px, py, pressure, R, W, thickness, force_fb_override=False):
+        t_info = self.sequence[self.seq_index]
+        show_fb = t_info["Feedback"] or force_fb_override
+        
+        if not show_fb:
+            return Qt.GlobalColor.white 
+            
+        dist_c = math.sqrt((px - self.width()/2)**2 + (py - self.height()/2)**2)
+        erreur_radiale = abs(dist_c - R)
+        current_force = pressure * CONFIG["RAW_MAX"]
+        
+        # 1. Erreur Spatiale prioritaire
+        if (erreur_radiale + thickness/2) > (W / 2):
+            return Qt.GlobalColor.red 
+        
+        # 2. Erreur de Force (seulement si la tâche l'exige)
+        if t_info["Task"] == "FVP":
+            if current_force < self.f_min:
+                return Qt.GlobalColor.blue 
+            elif current_force > self.f_max:
+                return QColor("orange")    
+                
+        # 3. Tout est parfait
+        return Qt.GlobalColor.green
+
     def game_loop(self):
         t = time.perf_counter()
         cx, cy = self.width()/2, self.height()/2
@@ -123,15 +158,12 @@ class SteeringExpe(QWidget):
             dist = math.sqrt((self.pos.x()-cx)**2 + (self.pos.y()-sy)**2)
             current_force = self.pressure * CONFIG["RAW_MAX"]
             
-            # Vérification de la position de départ ET de la calibration de force
             if dist < 30:
                 force_ok = False
                 if self.sequence[self.seq_index]["Task"] == "FVP":
-                    # Pour la force, il faut être dans la zone cible pour déclencher le timer
                     if self.f_min <= current_force <= self.f_max:
                         force_ok = True
                 else:
-                    # Pour Vitesse/Précision, une simple pression suffit
                     if self.pressure > 0.05:
                         force_ok = True
                 
@@ -179,7 +211,6 @@ class SteeringExpe(QWidget):
         R = self.sequence[self.seq_index]["R"]
         W = self.sequence[self.seq_index]["W"]
 
-        # L'épaisseur ne dépend du feedback QUE pendant l'enregistrement
         if self.sequence[self.seq_index]["Feedback"]:
             thickness = CONFIG["BASE_THICKNESS"] + (self.pressure * CONFIG["MAX_THICKNESS"])
         else:
@@ -201,13 +232,17 @@ class SteeringExpe(QWidget):
         in_t = 1 if (erreur_radiale + thickness/2) <= (W / 2) else 0
         angle = math.atan2(py - cy, px - cx)
         
+        # On calcule la couleur en temps réel pour l'enregistrer dans la trace (même si FB False)
+        trace_color = self.get_pointer_color(px, py, self.pressure, R, W, thickness, force_fb_override=False)
+        
         self.buffer_raw.append([
             t, t-self.actual_start_t, px, py, 
             self.pressure * CONFIG["RAW_MAX"], 
             thickness, erreur_radiale, in_t, angle
         ])
         
-        self.current_trajectory.append((QPointF(px, py), thickness))
+        # On sauvegarde la Position, l'Epaisseur ET la Couleur
+        self.current_trajectory.append((QPointF(px, py), thickness, trace_color))
 
         if len(self.buffer_raw) > 10:
             angles = [row[8] for row in self.buffer_raw]
@@ -231,21 +266,22 @@ class SteeringExpe(QWidget):
         bloc_id = f"{t_info['Task']}_{'FB' if t_info['Feedback'] else 'NoFB'}"
         
         if self.buffer_raw:
-            raw_to_save = [[self.pid, bloc_id, t_info["IDc_Level"], t_info["Rep"]] + r for r in self.buffer_raw]
+            # Ajout du Trial_in_Block (l'ordre 1 à 10) dans les datas
+            raw_to_save = [[self.pid, bloc_id, t_info["IDc_Level"], t_info["Rep_Geo"], t_info["Trial_in_Block"]] + r for r in self.buffer_raw]
             self.safe_save(f"{self.pid}_RAW.csv", raw_to_save, 
-                           ["ID", "Bloc", "IDc_Lvl", "Rep", "Time_Abs", "Time_Rel", "X", "Y", "P_Raw", "Thickness", "Err_Radiale", "InT", "Angle"])
+                           ["ID", "Bloc", "IDc_Lvl", "Rep_Geo", "Trial_in_Bloc", "Time_Abs", "Time_Rel", "X", "Y", "P_Raw", "Thickness", "Err_Radiale", "InT", "Angle"])
             
             data = np.array(self.buffer_raw)
             times, pressures, err_rad, in_t = data[:, 1], data[:, 4], data[:, 6], data[:, 7]
             
             score_row = [[self.pid, bloc_id, t_info["Task"], int(t_info["Feedback"]), 
-                          t_info["IDc_Level"], t_info["R"], t_info["W"], t_info["Rep"], 
+                          t_info["IDc_Level"], t_info["R"], t_info["W"], t_info["Rep_Geo"], t_info["Trial_in_Block"],
                           round(times[-1], 3), round(np.sqrt(np.mean(err_rad**2)), 2), 
                           round(np.mean(in_t) * 100, 1), round(np.mean(pressures), 1), 
                           round(np.std(pressures), 1), int(timeout)]]
             
             self.safe_save(f"{self.pid}_SCORES.csv", score_row, 
-                           ["ID", "Bloc", "Task", "FB", "IDc_Lvl", "R", "W", "Rep", 
+                           ["ID", "Bloc", "Task", "FB", "IDc_Lvl", "R", "W", "Rep_Geo", "Trial_in_Bloc",
                             "MT", "RMSE", "Pct_InT", "Mean_Force", "Std_Force", "Timeout"])
             
         self.current_trajectory = []
@@ -270,44 +306,54 @@ class SteeringExpe(QWidget):
         p = QPainter(self); p.setRenderHint(QPainter.RenderHint.Antialiasing)
         cx, cy = self.width()/2, self.height()/2
         
-        if self.state == "INTRO_TASK":
+        # Préparation des textes clairs
+        if self.seq_index < len(self.sequence):
             t_info = self.sequence[self.seq_index]
-            bloc_name = f"{t_info['Task']} - {'Avec' if t_info['Feedback'] else 'Sans'} Feedback Visuel"
+            nom_tache = "FORCE - VITESSE - PRÉCISION" if t_info['Task'] == "FVP" else "VITESSE - PRÉCISION"
+            nom_fb = "AVEC Feedback Visuel" if t_info['Feedback'] else "SANS Feedback Visuel"
+        
+        if self.state == "INTRO_TASK":
             p.setPen(Qt.GlobalColor.white); p.setFont(QFont("Arial", 30, QFont.Weight.Bold))
-            p.drawText(self.rect().adjusted(0,100,0,0), Qt.AlignmentFlag.AlignHCenter, f"NOUVEAU BLOC : {bloc_name}")
+            p.drawText(self.rect().adjusted(0,80,0,0), Qt.AlignmentFlag.AlignHCenter, f"NOUVEAU BLOC\n\n{nom_tache}\n{nom_fb}")
             
             p.setFont(QFont("Arial", 22))
             consigne = "Faites 1 tour complet dans le tunnel.\nSoyez le plus RAPIDE et le plus PRÉCIS possible."
             if t_info['Task'] == "FVP":
                 consigne += f"\nMaintenez une pression cible de {CONFIG['TARGET_RAW']} (+/- {CONFIG['FORCE_TOLERANCE_PCT']}%)."
             if t_info['Feedback']:
-                consigne += "\n\nAVEC FEEDBACK : La taille de la bille varie avec votre pression.\nRestez VERT. Si vous débordez (ROUGE), c'est une erreur !"
+                consigne += "\n\nAVEC FEEDBACK : L'épaisseur et la couleur de la trace varient avec votre force.\nRestez VERT. Si vous débordez (ROUGE), c'est une erreur !"
             else:
-                consigne += "\n\nSANS FEEDBACK : Fiez-vous à vos sensations mémorisées au départ."
+                consigne += "\n\nSANS FEEDBACK : Le pointeur reste blanc. Fiez-vous à vos sensations mémorisées au départ."
             p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, consigne + "\n\n[ ESPACE POUR DÉMARRER ]")
 
         elif self.state in ["REST", "LONG_BREAK", "END"]:
             p.setPen(Qt.GlobalColor.white); p.setFont(QFont("Arial", 30))
-            if self.state == "REST": p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, f"Essai {self.sequence[self.seq_index-1]['Rep']} terminé.\nSuivant dans un instant...")
+            if self.state == "REST": p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, f"Essai {self.sequence[self.seq_index-1]['Trial_in_Block']} terminé.\nSuivant dans un instant...")
             elif self.state == "LONG_BREAK": p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "CHANGEMENT DE CONDITION\n\n[ ESPACE POUR PASSER ]")
             else: p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "FIN DE L'EXPÉRIENCE\n[ ECHAP POUR QUITTER ]")
         
         else:
             R = self.sequence[self.seq_index]["R"]
             W = self.sequence[self.seq_index]["W"]
-            t_info = self.sequence[self.seq_index]
             
-            # Dessin du tunnel (Gris) SANS LA LIGNE MÉDIANE
+            # Affichage de la condition en permanence en haut à gauche
+            p.setPen(Qt.GlobalColor.white)
+            p.setFont(QFont("Arial", 16, QFont.Weight.Bold))
+            p.drawText(20, 40, f"Règle : {nom_tache} | {nom_fb}")
+            p.setFont(QFont("Arial", 14))
+            p.drawText(20, 70, f"Essai {t_info['Trial_in_Block']} / {CONFIG['REPS_PER_ID'] * len(TUNNEL_LEVELS)}")
+
+            # Dessin du tunnel (Gris)
             p.setPen(QPen(QColor(50, 50, 50), W)) 
             p.drawEllipse(QPointF(cx, cy), R, R)
 
             sy = cy + R 
             
-            # Trace du sujet
+            # Trace du sujet (MULTICOLORE)
             for i in range(1, len(self.current_trajectory)):
-                p1, th1 = self.current_trajectory[i-1]
-                p2, th2 = self.current_trajectory[i]
-                p.setPen(QPen(Qt.GlobalColor.white, th1, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+                p1, th1, col1 = self.current_trajectory[i-1]
+                p2, th2, col2 = self.current_trajectory[i]
+                p.setPen(QPen(col1, th1, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
                 p.drawLine(p1, p2)
 
             # Croix de départ et instructions de calibration
@@ -315,7 +361,6 @@ class SteeringExpe(QWidget):
                 p.setPen(QPen(Qt.GlobalColor.yellow if getattr(self, 'stationary_start_t', None) else Qt.GlobalColor.red, 4))
                 p.drawLine(QPointF(cx-20, sy), QPointF(cx+20, sy)); p.drawLine(QPointF(cx, sy-20), QPointF(cx, sy+20))
                 
-                # Ajout de l'instruction texte de calibration
                 if self.state == "WAIT_POS" and t_info["Task"] == "FVP":
                     p.setPen(Qt.GlobalColor.white); p.setFont(QFont("Arial", 20))
                     p.drawText(int(cx - 200), int(sy + 60), 400, 50, Qt.AlignmentFlag.AlignCenter, "Ajustez votre pression\npour être VERT")
@@ -325,37 +370,18 @@ class SteeringExpe(QWidget):
                     p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, str(self.cd_val))
 
             # ==========================================================
-            # LOGIQUE DU POINTEUR (Calibration & Feedback)
+            # POINTEUR ACTUEL
             # ==========================================================
-            current_force = self.pressure * CONFIG["RAW_MAX"]
-            dist_c = math.sqrt((self.pos.x()-cx)**2 + (self.pos.y()-cy)**2)
-            erreur_radiale = abs(dist_c - R)
-            
-            # ASTUCE : On force l'affichage du feedback si on est en phase de calibration FVP
             show_fb_now = t_info["Feedback"]
             if self.state == "WAIT_POS" and t_info["Task"] == "FVP":
                 show_fb_now = True
 
-            if show_fb_now:
-                current_th = CONFIG["BASE_THICKNESS"] + (self.pressure * CONFIG["MAX_THICKNESS"])
-            else:
-                current_th = CONFIG["BASE_THICKNESS"]
+            current_th = CONFIG["BASE_THICKNESS"] + (self.pressure * CONFIG["MAX_THICKNESS"]) if show_fb_now else CONFIG["BASE_THICKNESS"]
+            col = self.get_pointer_color(self.pos.x(), self.pos.y(), self.pressure, R, W, current_th, force_fb_override=show_fb_now)
 
-            # Couleurs
-            if not show_fb_now:
-                col = Qt.GlobalColor.white 
-            else:
-                col = Qt.GlobalColor.green 
-                if (erreur_radiale + current_th/2) > (W / 2):
-                    col = Qt.GlobalColor.red 
-                elif t_info["Task"] == "FVP":
-                    if current_force < self.f_min:
-                        col = Qt.GlobalColor.blue 
-                    elif current_force > self.f_max:
-                        col = QColor("orange")    
-
+            # Dessin de la bille (Avec un liseré noir pour toujours être visible sur la croix jaune)
             p.setBrush(col)
-            p.setPen(Qt.GlobalColor.transparent) 
+            p.setPen(QPen(Qt.GlobalColor.black, 1)) 
             p.drawEllipse(self.pos, current_th/2, current_th/2)
 
     def keyPressEvent(self, e):
