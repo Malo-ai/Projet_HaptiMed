@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Protocole Expérimental - HaptiMed</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .page {
+            background: white;
+            max-width: 800px;
+            margin: 0 auto 30px auto;
+            padding: 40px 50px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .page { box-shadow: none; margin: 0; padding: 0; }
+            .page-break { page-break-before: always; }
+        }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #2980b9; padding-bottom: 10px; }
+        h2 { color: #2980b9; margin-top: 30px; }
+        h3 { color: #16a085; }
+        .alert-box {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        .script-box {
+            background-color: #e8f4f8;
+            border: 1px solid #bce8f1;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .script-box:before {
+            content: "🗣️ À DIRE AU PARTICIPANT :";
+            display: block;
+            font-weight: bold;
+            color: #31708f;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th { background-color: #2c3e50; color: white; }
+        .highlight { font-weight: bold; color: #d35400; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 0.85em; color: white; }
+        .bg-green { background-color: #27ae60; }
+        .bg-red { background-color: #c0392b; }
+        .bg-blue { background-color: #2980b9; }
+        .bg-orange { background-color: #f39c12; }
+    </style>
+</head>
+<body>
+
+    <div class="page">
+        <h1>Protocole HaptiMed : Tâche de Pilotage Circulaire</h1>
+        
+        <h2>1. Présentation de la Tâche</h2>
+        <p>Le participant doit tracer un cercle parfait en restant à l'intérieur d'un "tunnel" virtuel très étroit (5 pixels de large) tracé sur la tablette. Le départ se fait systématiquement au sud du cercle, sur une croix de repère. Le mouvement est enregistré dès la fin du décompte visuel (3, 2, 1) et se termine automatiquement lorsque 360° ont été parcourus.</p>
+
+        <h2>2. Les 4 Conditions Expérimentales</h2>
+        <p>L'expérience comporte 4 blocs présentés de manière aléatoire :</p>
+        <table>
+            <tr>
+                <th>Condition</th>
+                <th>Feedback Visuel</th>
+                <th>Tâche du participant</th>
+            </tr>
+            <tr>
+                <td><b>VP - Avec FB</b></td>
+                <td>Oui (Trait continu)</td>
+                <td>Dessiner vite et précis. <span class="badge bg-green">Vert</span> = Dedans, <span class="badge bg-red">Rouge</span> = Dehors.</td>
+            </tr>
+            <tr>
+                <td><b>VP - Sans FB</b></td>
+                <td>Non (Pointeur gris)</td>
+                <td>Dessiner vite et précis sans aide visuelle (se fier à la proprioception).</td>
+            </tr>
+            <tr>
+                <td><b>FVP - Avec FB</b></td>
+                <td>Oui (Trait continu)</td>
+                <td>Vitesse, Précision ET Force. <br><span class="badge bg-green">Vert</span> = Force OK, <span class="badge bg-blue">Bleu</span> = Trop faible, <span class="badge bg-orange">Orange</span> = Trop fort, <span class="badge bg-red">Rouge</span> = Dehors.</td>
+            </tr>
+            <tr>
+                <td><b>FVP - Sans FB</b></td>
+                <td>Non (Pointeur gris)</td>
+                <td>Calibrer la force au départ, puis tracer sans aide en mémorisant la pression et la trajectoire.</td>
+            </tr>
+        </table>
+
+        <h2>3. Script d'Instruction (À lire mot pour mot)</h2>
+
+        <h3>Avant de commencer (Général)</h3>
+        <div class="script-box">
+            "Bonjour. Vous allez réaliser une tâche de dessin sur cette tablette. Votre objectif principal est toujours d'être le plus rapide possible tout en restant le plus précis possible à l'intérieur du tunnel gris. L'expérience comporte 4 phases différentes. Avant chaque phase, un écran vous expliquera les règles spécifiques."
+        </div>
+
+        <h3>Condition : VITESSE - PRÉCISION (Avec FB)</h3>
+        <div class="script-box">
+            "Placez votre stylet sur la croix grise en bas. Quand vous touchez l'écran, elle devient verte et un décompte de 3 secondes se lance.<br><br>
+            Au 'GO', tracez le cercle le plus vite possible sans sortir du tunnel. Un trait de couleur vous suivra. S'il est vert, vous êtes bon. S'il devient rouge, vous êtes sorti du tunnel. Continuez jusqu'à ce que l'écran affiche 'Essai terminé'."
+        </div>
+
+        <h3>Condition : VITESSE - PRÉCISION (Sans FB)</h3>
+        <div class="script-box">
+            "Même départ sur la croix. Mais cette fois-ci, <b>vous n'aurez plus de trait de couleur pour vous aider</b>. Vous ne verrez que le bout de votre stylet en gris. Fiez-vous à votre œil et à votre main pour aller vite tout en restant dans le tunnel."
+        </div>
+
+        <h3>Condition : FORCE - VITESSE - PRÉCISION (Avec FB)</h3>
+        <div class="script-box">
+            "Attention, nouvelle règle : vous devez maintenant contrôler votre pression sur le stylet. Sur la croix de départ, trouvez la bonne pression pour la rendre verte et maintenez-la 1 seconde.<br><br>
+            Pendant le tracé, si vous appuyez trop fort, le trait sera orange. Si vous n'appuyez pas assez, il sera bleu. S'il est vert, votre force est parfaite. Si vous sortez du tunnel, il sera rouge. Soyez rapide, précis, et gardez la bonne pression."
+        </div>
+
+        <h3>Condition : FORCE - VITESSE - PRÉCISION (Sans FB)</h3>
+        <div class="script-box">
+            "C'est la condition la plus complexe. Calibrez votre force sur la croix de départ jusqu'à ce qu'elle soit verte. Mémorisez bien cette sensation.<br><br>
+            Pendant le tracé, <b>vous n'aurez aucun trait de couleur pour vous corriger</b>. Fiez-vous uniquement à votre mémoire musculaire pour maintenir la bonne force tout en restant dans le tunnel. Vous ne verrez que le pointeur gris."
+        </div>
+
+        <div class="alert-box">
+            ⚠️ Rappel pour l'expérimentateur : Toujours vérifier que le participant ne pose pas la paume de sa main sur l'écran si la tablette ne gère pas parfaitement le "palm rejection".
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <div class="page">
+        <h1>Page 2 : Plan d'Analyse des Données</h1>
+        
+        <h2>1. Fichiers Générés</h2>
+        <p>Le programme génère deux fichiers CSV par participant (ex: <code>P01_RAW.csv</code> et <code>P01_SCORES.csv</code>).</p>
+
+        <h2>2. Variables Indépendantes (VI)</h2>
+        <ul>
+            <li><b>Tâche :</b> VP (Vitesse-Précision) vs FVP (Force-Vitesse-Précision).</li>
+            <li><b>Feedback :</b> Avec FB (Visuel) vs Sans FB (Proprioceptif/Mémoire).</li>
+        </ul>
+
+        <h2>3. Variables Dépendantes (VD) & Métriques Extraites</h2>
+        
+        <h3>A. Performance Cinématique (Vitesse)</h3>
+        <ul>
+            <li><b>Temps de Mouvement (MT) :</b> Temps total (en secondes) pour compléter les 360°. Plus le MT est bas, plus le sujet est rapide. <i>(Extrait de P01_SCORES)</i></li>
+            <li><b>Profil de vitesse :</b> Calculable en post-traitement depuis le fichier <code>_RAW</code> (distance entre deux points X,Y divisée par le temps écoulé). Permet d'observer les micro-arrêts ou les saccades (fluidité du mouvement).</li>
+        </ul>
+
+        <h3>B. Performance Spatiale (Précision)</h3>
+        <ul>
+            <li><b>RMSE (Root Mean Square Error) :</b> C'est l'erreur radiale moyenne. Calcule la déviation moyenne du participant par rapport au centre absolu du tunnel. Un RMSE élevé indique une mauvaise tenue de trajectoire.</li>
+            <li><b>Pourcentage dans le tunnel (Pct_InT) :</b> Pourcentage de points enregistrés où la distance au centre était inférieure à W/2 (2.5 px). Fournit un taux de réussite clair.</li>
+        </ul>
+
+        <h3>C. Performance Haptique (Force) - <i>Uniquement pertinent pour FVP</i></h3>
+        <ul>
+            <li><b>Force Moyenne (Mean_Force) :</b> Évalue si le participant a tendance à dériver vers une force excessive ou insuffisante, particulièrement dans la condition "Sans FB".</li>
+            <li><b>Variabilité de la Force (Std_Force) :</b> L'écart-type de la pression. Indique la stabilité haptique. Une valeur élevée signifie que le participant tremble ou ajuste constamment sa pression.</li>
+            <li><b>Erreur Absolue de Force (AFE) :</b> À calculer en post-traitement : <code>|Mean_Force - TARGET_RAW|</code>. Mesure la précision haptique réelle.</li>
+        </ul>
+
+        <h2>4. Hypothèses de Recherche Typiques</h2>
+        <table style="font-size: 0.9em;">
+            <tr>
+                <th>Domaine</th>
+                <th>Hypothèse Attendue</th>
+            </tr>
+            <tr>
+                <td><b>Loi de Fitts / Steering Law</b></td>
+                <td>Le Temps de Mouvement (MT) devrait augmenter drastiquement dans la condition FVP par rapport à VP, en raison de la charge cognitive (double tâche : spatiale + haptique).</td>
+            </tr>
+            <tr>
+                <td><b>Dépendance au Feedback</b></td>
+                <td>En condition "FVP - Sans FB", la variabilité de la force (Std_Force) augmentera significativement et la dérive moyenne s'éloignera de la cible, montrant la difficulté de maintenir une consigne de force basée sur la seule proprioception sans recalibrage visuel.</td>
+            </tr>
+            <tr>
+                <td><b>Compromis Vitesse-Précision</b></td>
+                <td>Si le Feedback est retiré (Sans FB), les participants pourraient ralentir (MT plus long) pour tenter de maintenir le pourcentage de précision (Pct_InT) constant.</td>
+            </tr>
+        </table>
+    </div>
+
+</body>
+</html>
