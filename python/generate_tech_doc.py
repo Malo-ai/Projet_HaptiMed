@@ -236,7 +236,7 @@ html_content = r"""<!DOCTYPE html>
 """
 
 # --- SAUVEGARDE DU FICHIER ---
-output_file = os.path.join(DOC_PATH, "Documentation_Technique_Globale.html")
+output_file = os.path.join(BASE_DIR, "Documentation_Technique_Globale.html")
 with open(output_file, "w", encoding="utf-8") as f:
     f.write(html_content)
 

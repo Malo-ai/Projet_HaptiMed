@@ -3,7 +3,7 @@ import os
 # Configuration des chemins
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOC_PATH = os.path.join(BASE_DIR, "doc")
-REPORT_FILE = os.path.join(DOC_PATH, "Rapport_Master_HaptiMed.html")
+REPORT_FILE = os.path.join(BASE_DIR, "Rapport_Master_HaptiMed.html")
 
 # Liste des graphiques et interprétations scientifiques
 # Liste des graphiques et interprétations scientifiques (Inclus IA)
