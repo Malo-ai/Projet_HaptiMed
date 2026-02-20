@@ -1,11 +1,9 @@
-# Fichiers Python temporaires
-__pycache__/
-*.pyc
-
-# Environnements virtuels
+# Environnements Python
 venv/
-env/
+env_haptimed/
+__pycache__/
 
-# Fichiers système
-.DS_Store
-Thumbs.db
+# Ignorer TOUTES les données CSV...
+data/clean/*.csv
+data/features/*.csv
+data/raw/*.csv
