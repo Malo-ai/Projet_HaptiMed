@@ -31,6 +31,13 @@ html_content = r"""<!DOCTYPE html>
         h2 { color: var(--secondary); margin-top: 50px; border-left: 5px solid var(--secondary); padding-left: 15px; background: var(--box-bg); padding: 12px; }
         h3 { color: var(--primary); border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 35px;}
         
+        /* Grille des Hypothèses */
+        .hypotheses-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 25px 0; }
+        .hyp-card { padding: 20px; border-radius: 8px; border-top: 5px solid; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .hyp-card h4 { margin: 0 0 10px 0; color: var(--primary); }
+        .hyp-card p { margin: 0; font-size: 0.95em; }
+        .hyp-tag { display: inline-block; margin-top: 10px; font-size: 0.8em; font-weight: bold; text-transform: uppercase; color: var(--secondary); }
+
         /* Sommaire */
         .toc { background: var(--box-bg); padding: 25px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 40px; }
         .toc h2 { background: transparent; border: none; padding: 0; margin-top: 0; }
@@ -89,16 +96,39 @@ html_content = r"""<!DOCTYPE html>
     <h2 id="partie1">1. Protocole Expérimental et Setup</h2>
     <p>Ce protocole vise à comparer la signature motrice d'experts et de novices lors d'une tâche de navigation guidée sous contrainte de force.</p>
     
-    
+    <h3>Question de Recherche & Hypothèses</h3>
+    <p><b>Problématique :</b> Comment l'intégration d'une contrainte de force axiale influence-t-elle la cinématique, le compromis vitesse-précision et la fluidité gestuelle chez les chirurgiens experts par rapport aux novices ?</p>
+
+    <div class="hypotheses-grid">
+        <div class="hyp-card" style="border-top-color: #3498db;">
+            <h4>H1 : Validité Clinique (Le "Qui")</h4>
+            <p>Le score de performance sur tablette (Steering) permet de classer les chirurgiens de la même manière que la note clinique standardisée <b>OSATS</b>.</p>
+            <span class="hyp-tag">Corrélation de Spearman</span>
+        </div>
+        <div class="hyp-card" style="border-top-color: #9b59b6;">
+            <h4>H2 : Sensibilité (Le "Petit plus")</h4>
+            <p>Les mesures cinématiques objectives sont plus fines que l'œil humain pour différencier des profils ayant pourtant le même score OSATS.</p>
+            <span class="hyp-tag">Analyse de Variance Résiduelle</span>
+        </div>
+        <div class="hyp-card" style="border-top-color: #27ae60;">
+            <h4>H3 : Compromis 3D (Force-Vitesse-Précision)</h4>
+            <p>L'introduction de la contrainte de force axiale (FVP) altère significativement la constante de performance de la Loi de Steering (Throughput) chez les novices, tandis que les experts maintiennent un compromis stable.</p>
+            <span class="hyp-tag">Interaction Groupe × Condition (Throughput)</span>
+        </div>
+        <div class="hyp-card" style="border-top-color: #e67e22;">
+            <h4>H4 : Signature Motrice (La Qualité)</h4>
+            <p>Le geste de l'expert est significativement plus fluide (moins de saccades) et stable que celui du novice (contrôle prédictif).</p>
+            <span class="hyp-tag">LDLJ (Log Dimensionless Jerk)</span>
+        </div>
+    </div>
 
     <h3>Consignes et Schéma de l'expérience</h3>
+    
     <ul>
         <li><b>Cohorte :</b> Sujets Experts (Chirurgiens) vs Novices (Étudiants).</li>
         <li><b>Tâche :</b> Effectuer un tour complet dans un tunnel circulaire de rayon $R$ et largeur $W$.</li>
-        <li><b>Conditions :</b> VP (Vitesse-Précision) et FVP (Force-Vitesse-Précision).</li>
+        <li><b>Conditions :</b> VP (Vitesse-Précision), VP sans FB (feedback), FVP (Force-Vitesse-Précision) et FVP avec feedback.</li>
     </ul>
-
-    <p class="transition-phrase">➔ Une fois le sujet installé, nous procédons à la calibration physique de son profil de force.</p>
 
     <hr>
 
@@ -186,7 +216,7 @@ html_content = r"""<!DOCTYPE html>
 
     <h2 id="partie5">5. Analyse Inférentielle (<code>analysis_publication.py</code>)</h2>
     <h3>Objectif et Justification</h3>
-    <p>Valider les hypothèses de recherche par des tests statistiques rigoureux (Welch t-test) et mesurer la force de la différence par le d de Cohen.</p>
+    <p>Valider les hypothèses de recherche par des tests statistiques rigoureux (Welch t-test, ANOVA) et mesurer la force de la différence par le d de Cohen.</p>
 
     <div class="math-box">
         $$ d = \frac{\bar{x}_1 - \bar{x}_2}{s_{pooled}} $$
@@ -221,7 +251,7 @@ html_content = r"""<!DOCTYPE html>
     <ul>
         <li><a class="lib-link" href="https://scikit-learn.org/">Scikit-Learn</a> : Random Forest Classifier et métriques de validation.</li>
         <li><a class="lib-link" href="https://seaborn.pydata.org/">Seaborn</a> : Visualisation des matrices de confusion.</li>
-    </ul>
+    </ul> 
 
     <details>
         <summary>Détail de l'architecture et variables</summary>
@@ -240,4 +270,4 @@ output_file = os.path.join(BASE_DIR, "Documentation_Technique_Globale.html")
 with open(output_file, "w", encoding="utf-8") as f:
     f.write(html_content)
 
-print(f"[SUCCÈS] Documentation complète générée : {output_file}")
+print(f"[SUCCÈS] Documentation complète générée : {output_file}")252525555552555555555555555555555555555555555555555555555555555555555522225

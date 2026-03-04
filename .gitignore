@@ -7,3 +7,5 @@ __pycache__/
 data/clean/*.csv
 data/features/*.csv
 data/raw/*.csv
+Paper_intervention/ 
+data/ 

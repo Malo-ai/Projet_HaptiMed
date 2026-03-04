@@ -19,14 +19,14 @@ TUNNEL_LEVELS = [{"R": 350, "W": 5}]
 
 CONFIG = {
     "TARGET_RAW": 3200, 
-    "FORCE_TOLERANCE_PCT": 10, 
+    "FORCE_TOLERANCE_PCT": 20, 
     "RAW_MAX": 8192,
     "BASE_THICKNESS": 6,        
     "TEMPS_MAX_ESSAI": 15, 
     "TEMPS_REPOS": 3, 
     "TEMPS_PAUSE_LONGUE": 20,
     "REPS_PER_ID": 10,          
-    "STATIONARY_DELAY": 1.0,    
+    "STATIONARY_DELAY": 0.5, # 500ms d'attente sur la croix   
     "VELOCITY_THRESHOLD": 10.0
 }
 
@@ -82,15 +82,14 @@ class InstructionDialog(QDialog):
         title_text = "BIENVENUE DANS L'EXPÉRIENCE" if is_first else "CHANGEMENT DE CONDITION"
         layout.addWidget(QLabel(f"<h1 style='color:#2c3e50; text-align:center;'>{title_text}</h1>"))
 
-        # MODIFICATION DU NOM ICI
         condition_title = f"{'FORCE - VITESSE - PRÉCISION' if task_type == 'FVP' else 'VITESSE - PRÉCISION'} - {'AVEC FEEDBACK' if has_feedback else 'SANS FEEDBACK'}"
         layout.addWidget(QLabel(f"<h2 style='color:#2980b9; text-align:center;'>{condition_title}</h2>"))
 
         instr = "<b>DÉPART :</b><br>Placez-vous sur la croix en bas. "
         if task_type == "FVP":
-            instr += "Calibrez votre pression pour rendre la croix <b style='color:green;'>VERTE</b>. Maintenez 1 seconde.<br><br>"
+            instr += "Calibrez votre pression pour rendre la croix <b style='color:green;'>VERTE</b>. Maintenez 0.5 seconde.<br><br>"
         else:
-            instr += "Touchez la tablette pour rendre la croix <b style='color:green;'>VERTE</b>. Maintenez 1 seconde.<br><br>"
+            instr += "Touchez la tablette pour rendre la croix <b style='color:green;'>VERTE</b>. Maintenez 0.5 seconde.<br><br>"
 
         instr += "<b>PENDANT LE DESSIN :</b><br>"
         instr += "Allez le plus vite possible tout en restant dans le tunnel.<br>"
@@ -133,7 +132,9 @@ class SteeringExpe(QWidget):
         self.f_min = CONFIG["TARGET_RAW"] - margin; self.f_max = CONFIG["TARGET_RAW"] + margin
         
         self.setStyleSheet("background-color: black;")
-        self.showFullScreen(); self.setCursor(Qt.CursorShape.BlankCursor); self.beep = QSoundEffect(self)
+        self.showFullScreen()
+        self.setCursor(Qt.CursorShape.BlankCursor)
+        self.beep = QSoundEffect(self)
         
         self.pos = QPointF(0,0); self.pressure = 0.0
         self.buffer_raw = []; self.current_trajectory = [] 
@@ -153,7 +154,12 @@ class SteeringExpe(QWidget):
             for index, essai in enumerate(essais_bloc): essai["Trial_in_Block"] = index + 1
             self.sequence.extend(essais_bloc)
             
-        self.seq_index = 0; self.state = "WAIT_POS" 
+        self.seq_index = 0
+        
+        # NOUVEAU : Flag pour savoir si on est en mode pratique
+        self.is_practice = True
+        self.state = "WAIT_POS" 
+        
         self.timer = QTimer(self); self.timer.timeout.connect(self.game_loop); self.timer.start(8)
         self.prev_t = time.perf_counter(); self.prev_pos = QPointF(0,0)
 
@@ -197,14 +203,18 @@ class SteeringExpe(QWidget):
                     self.beep.play(); self.state = "RECORDING"
                     self.start_trial_time = t; self.movement_started = False
                     self.buffer_raw = []; self.current_trajectory = []
+                    self.go_timer = t
                     
         elif self.state == "RECORDING":
             if t - self.start_trial_time > CONFIG["TEMPS_MAX_ESSAI"]: self.end_trial(timeout=True)
             else: self.collect_data(t)
+            
         elif self.state == "REST":
             if t - self.timer_state >= CONFIG["TEMPS_REPOS"]: self.next_step()
+            
         elif self.state == "LONG_BREAK":
             if t - self.timer_state >= CONFIG["TEMPS_PAUSE_LONGUE"]: self.state = "WAIT_POS"
+            
         self.update()
 
     def collect_data(self, t):
@@ -223,6 +233,7 @@ class SteeringExpe(QWidget):
         in_t = 1 if erreur_radiale <= (W / 2) else 0 
         angle = math.atan2(py - cy, px - cx)
         
+        # Le feedback visuel fonctionne même en Pratique si c'est la condition
         col = self.get_pointer_color(px, py, self.pressure, R, W)
         
         self.buffer_raw.append([t, t-self.actual_start_t, px, py, self.pressure * CONFIG["RAW_MAX"], thickness, erreur_radiale, in_t, angle])
@@ -242,6 +253,14 @@ class SteeringExpe(QWidget):
             w.writerows(data_list)
 
     def end_trial(self, timeout=False):
+        # --- NOUVEAU : GESTION DE LA PRATIQUE ---
+        if self.is_practice:
+            self.buffer_raw = []
+            self.current_trajectory = []
+            self.state = "PRACTICE_END"
+            return
+            
+        # Code normal de sauvegarde si ce n'est pas de la pratique
         t_info = self.sequence[self.seq_index]; bloc_id = f"{t_info['Task']}_{'FB' if t_info['Feedback'] else 'NoFB'}"
         if self.buffer_raw:
             raw_to_save = [[self.pid, bloc_id, t_info["IDc_Level"], t_info["Rep_Geo"], t_info["R"], t_info["W"], t_info["Trial_in_Block"]] + r for r in self.buffer_raw]
@@ -262,7 +281,15 @@ class SteeringExpe(QWidget):
             if old_bloc != new_bloc:
                 instr = InstructionDialog(new_bloc[0], new_bloc[1], is_first=False)
                 instr.exec()
+                # On relance un mode test pour la nouvelle condition
+                self.is_practice = True
             self.state = "WAIT_POS"
+
+    def closeEvent(self, event):
+        # Sauvegarde de secours si on fait ECHAP pendant un VRAI essai
+        if self.state == "RECORDING" and not self.is_practice: 
+            self.end_trial(timeout=True)
+        event.accept()
 
     def paintEvent(self, e):
         p = QPainter(self); p.setRenderHint(QPainter.RenderHint.Antialiasing); cx, cy = self.width()/2, self.height()/2
@@ -271,7 +298,12 @@ class SteeringExpe(QWidget):
             p.setPen(Qt.GlobalColor.white); p.setFont(QFont("Arial", 30))
             p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "FIN DE L'EXPÉRIENCE\n\n[ ECHAP ]"); return
             
-        # NOUVEL ECRAN DE REPOS AVEC DECOMPTE VISUEL
+        # --- NOUVEL ÉCRAN DE TRANSITION APRÈS LA PRATIQUE ---
+        if self.state == "PRACTICE_END":
+            p.setPen(Qt.GlobalColor.cyan); p.setFont(QFont("Arial", 30, QFont.Weight.Bold))
+            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "ESSAI DE TEST TERMINÉ\n\nAppuyez sur [ ESPACE ] pour lancer les vrais enregistrements.")
+            return
+
         if self.state == "REST":
             t = time.perf_counter()
             time_left = math.ceil(CONFIG["TEMPS_REPOS"] - (t - self.timer_state))
@@ -284,8 +316,14 @@ class SteeringExpe(QWidget):
         R = self.sequence[self.seq_index]["R"]; W = self.sequence[self.seq_index]["W"]
         has_feedback = self.sequence[self.seq_index]["Feedback"]
         
-        p.setPen(Qt.GlobalColor.white); p.setFont(QFont("Arial", 16))
-        p.drawText(20, 40, f"Essai {self.seq_index + 1} / {len(self.sequence)}")
+        # Affiche le numéro de l'essai ou "MODE TEST"
+        p.setFont(QFont("Arial", 16))
+        if self.is_practice:
+            p.setPen(Qt.GlobalColor.cyan)
+            p.drawText(self.rect().adjusted(0, 30, 0, 0), Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, "MODE TEST (Non enregistré)")
+        else:
+            p.setPen(Qt.GlobalColor.white)
+            p.drawText(20, 40, f"Essai {self.seq_index + 1} / {len(self.sequence)}")
         
         p.setPen(QPen(QColor(100, 100, 100), W)); p.drawEllipse(QPointF(cx, cy), R, R)
         
@@ -294,7 +332,7 @@ class SteeringExpe(QWidget):
                 p1, th1, col1 = self.current_trajectory[i-1]; p2, th2, col2 = self.current_trajectory[i]
                 p.setPen(QPen(col1, th1, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)); p.drawLine(p1, p2)
             
-        if self.state in ["WAIT_POS", "COUNTDOWN"]:
+        if self.state in ["WAIT_POS", "COUNTDOWN", "RECORDING"]:
             sy = cy + R; current_force = self.pressure * CONFIG["RAW_MAX"]
             dist = math.sqrt((self.pos.x()-cx)**2 + (self.pos.y()-sy)**2)
             
@@ -313,6 +351,10 @@ class SteeringExpe(QWidget):
                 p.setPen(Qt.GlobalColor.yellow)
                 p.setFont(QFont("Arial", 120, QFont.Weight.Bold))
                 p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, str(self.cd_val))
+                
+            if self.state == "RECORDING" and hasattr(self, 'go_timer') and (time.perf_counter() - self.go_timer < 1.0):
+                p.setPen(Qt.GlobalColor.green); p.setFont(QFont("Arial", 120, QFont.Weight.Bold))
+                p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "GO !")
         
         current_th = CONFIG["BASE_THICKNESS"]
         col_pointer = self.get_pointer_color(self.pos.x(), self.pos.y(), self.pressure, R, W) if has_feedback else Qt.GlobalColor.lightGray
@@ -321,7 +363,12 @@ class SteeringExpe(QWidget):
         p.drawEllipse(self.pos, current_th/2 + 2, current_th/2 + 2)
 
     def keyPressEvent(self, e):
-        if e.key() == Qt.Key.Key_Escape: self.close()
+        if e.key() == Qt.Key.Key_Space:
+            if self.state == "PRACTICE_END":
+                self.is_practice = False
+                self.state = "WAIT_POS"
+        if e.key() == Qt.Key.Key_Escape: 
+            self.close()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
