@@ -2,21 +2,19 @@ from fpdf import FPDF
 import os
 
 LOGO_FILE = "image_d9e00a.png" 
-# Chemin direct et précis vers ton dossier
 OUTPUT_DIR = r"C:\Projet_HaptiMed\Paper_intervention" 
+
+if not os.path.exists(OUTPUT_DIR):
+    os.makedirs(OUTPUT_DIR)
 
 class HaptiMedPDF(FPDF):
     def header(self):
-        # Insertion du logo
         if os.path.exists(LOGO_FILE):
             self.image(LOGO_FILE, 10, 8, 40)
         
-        # En-tête du labo
         self.set_font('Arial', 'B', 10)
         self.cell(45) 
         self.cell(0, 10, 'Laboratoire EuroMov Digital Health in Motion - Univ. Montpellier', 0, 1, 'L')
-        
-        # On force le curseur Y à 55 (bien en dessous du logo)
         self.set_y(55)
 
     def footer(self):
@@ -25,7 +23,6 @@ class HaptiMedPDF(FPDF):
         self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
 
 def clean_text(txt):
-    # Garde les accents français mais retire les symboles spéciaux qui font planter FPDF
     txt = txt.replace("’", "'").replace("…", "...").replace("•", "-")
     return txt.encode('latin-1', 'replace').decode('latin-1')
 
@@ -56,7 +53,6 @@ def create_fiche_info():
         pdf.multi_cell(0, 5, clean_text(text))
         pdf.ln(2)
 
-    # Sauvegarde dans le dossier spécifié
     pdf.output(os.path.join(OUTPUT_DIR, "01_Fiche_Information.pdf"))
 
 def create_consentement():
@@ -92,7 +88,6 @@ def create_consentement():
     pdf.cell(90, 10, clean_text("Signature du chercheur :"), 0, 0)
     pdf.cell(0, 10, clean_text("Fait à Montpellier"), 0, 1)
 
-    # Sauvegarde dans le dossier spécifié
     pdf.output(os.path.join(OUTPUT_DIR, "02_Consentement_Eclaire.pdf"))
 
 def create_tableau_suivi():
@@ -117,12 +112,89 @@ def create_tableau_suivi():
             pdf.cell(w, 10, "", 1, 0)
         pdf.ln()
 
-    # Sauvegarde dans le dossier spécifié
     pdf.output(os.path.join(OUTPUT_DIR, "03_Tableau_Suivi.pdf"))
+
+# --- NOUVELLE FONCTION : LE GUIDE UTILISATEUR ---
+def create_guide_utilisateur():
+    pdf = HaptiMedPDF()
+    pdf.add_page()
+    
+    pdf.set_font('Arial', 'B', 16)
+    pdf.cell(0, 10, clean_text("4. GUIDE UTILISATEUR - PROTOCOLE EXPÉRIMENTAL"), 0, 1, 'C')
+    pdf.ln(5)
+
+    # Phase 1
+    pdf.set_font('Arial', 'B', 13)
+    pdf.set_text_color(41, 128, 185) # Bleu EuroMov
+    pdf.cell(0, 8, clean_text("PHASE 1 : Accueil et Inclusion"), 0, 1)
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font('Arial', '', 11)
+    pdf.multi_cell(0, 6, clean_text("1. Information : Le participant lit la Fiche d'information.\n"
+                                    "2. Consentement : Signature du Formulaire (vérification des critères).\n"
+                                    "3. Anonymisation : Attribution d'un code (ex: P01) dans le Tableau de suivi."))
+    pdf.ln(3)
+
+    # Phase 2
+    pdf.set_font('Arial', 'B', 13)
+    pdf.set_text_color(41, 128, 185)
+    pdf.cell(0, 8, clean_text("PHASE 2 : Passation Expérimentale"), 0, 1)
+    pdf.set_text_color(0, 0, 0)
+    
+    pdf.set_font('Arial', 'B', 11)
+    pdf.cell(0, 6, clean_text("Étape 2.1 : Calibration de la Force (MVC)"), 0, 1)
+    pdf.set_font('Courier', '', 10)
+    pdf.set_fill_color(240, 240, 240) # Fond gris clair pour le code
+    pdf.cell(0, 6, "python calibration_mvc.py", 0, 1, fill=True)
+    pdf.set_font('Arial', '', 10)
+    pdf.multi_cell(0, 5, clean_text("Action : Le sujet appuie fermement avec le stylet. Appuyez sur ESPACE pour enregistrer la MVC."))
+    pdf.ln(3)
+
+    pdf.set_font('Arial', 'B', 11)
+    pdf.cell(0, 6, clean_text("Étape 2.2 : Tâche de Navigation (Steering Task)"), 0, 1)
+    pdf.set_font('Courier', '', 10)
+    pdf.cell(0, 6, "python steering_task.py", 0, 1, fill=True)
+    pdf.set_font('Arial', '', 10)
+    pdf.multi_cell(0, 5, clean_text("1. Configuration : Entrez l'ID du sujet (ex: P01). Cliquez sur OK.\n"
+                                    "2. Consignes & Mode TEST : Lecture des consignes (ESPACE). Le sujet s'entraîne avec le tracé cyan (Non enregistré). Appuyez sur ESPACE à la fin.\n"
+                                    "3. Acquisition : Le vrai test commence. Le sujet maintient la pression sur la croix pendant 0.5s pour lancer le décompte."))
+    pdf.ln(3)
+
+    # Phase 3
+    pdf.set_font('Arial', 'B', 13)
+    pdf.set_text_color(41, 128, 185)
+    pdf.cell(0, 8, clean_text("PHASE 3 : Traitement et Analyse (Fin de journée)"), 0, 1)
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font('Arial', '', 11)
+    pdf.cell(0, 6, clean_text("Exécutez ces scripts un par un dans l'ordre :"), 0, 1)
+    
+    pdf.set_font('Courier', '', 10)
+    pdf.cell(0, 6, "python process_data.py           # 1. Nettoyage et Calculs", 0, 1, fill=True)
+    pdf.cell(0, 6, "python analysis_publication.py   # 2. Statistiques (Norme APA)", 0, 1, fill=True)
+    pdf.cell(0, 6, "python analysis_global.py        #    et Graphiques", 0, 1, fill=True)
+    pdf.cell(0, 6, "python analysis_ml.py            # 3. Machine Learning (IA)", 0, 1, fill=True)
+    pdf.cell(0, 6, "python generate_master_report.py # 4. Rapport Final HTML", 0, 1, fill=True)
+    pdf.ln(3)
+
+    # Phase 4
+    pdf.set_font('Arial', 'B', 13)
+    pdf.set_text_color(41, 128, 185)
+    pdf.cell(0, 8, clean_text("PHASE 4 : Sauvegarde Sécurisée du Code"), 0, 1)
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font('Arial', '', 10)
+    pdf.cell(0, 6, clean_text("En fin de semaine, sauvegardez votre code sur GitHub :"), 0, 1)
+    
+    pdf.set_font('Courier', '', 10)
+    pdf.cell(0, 6, "cd C:\Projet_HaptiMed", 0, 1, fill=True)
+    pdf.cell(0, 6, "git add .", 0, 1, fill=True)
+    pdf.cell(0, 6, "git commit -m \"Mise a jour suite aux passations\"", 0, 1, fill=True)
+    pdf.cell(0, 6, "git push", 0, 1, fill=True)
+
+    pdf.output(os.path.join(OUTPUT_DIR, "04_Guide_Utilisateur.pdf"))
 
 if __name__ == "__main__":
     print(f"Génération des fichiers PDF en cours dans le dossier '{OUTPUT_DIR}'...")
     create_fiche_info()
     create_consentement()
     create_tableau_suivi()
-    print("Succès ! Les 3 fiches PDF ont été générées et rangées.")
+    create_guide_utilisateur() # Appel du nouveau guide !
+    print("Succès ! Les 4 fiches PDF (y compris le Guide Utilisateur) ont été générées et rangées.")
