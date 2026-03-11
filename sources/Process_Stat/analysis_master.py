@@ -10,7 +10,7 @@ import warnings
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FEATURES_FILE = os.path.join(BASE_DIR, "data", "features", "dataset_features.csv")
-DOC_PATH = os.path.join(BASE_DIR, "doc")
+DOC_PATH = os.path.join(BASE_DIR, "results")
 
 if not os.path.exists(DOC_PATH): os.makedirs(DOC_PATH)
 

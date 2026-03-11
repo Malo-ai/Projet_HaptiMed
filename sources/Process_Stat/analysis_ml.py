@@ -10,7 +10,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FEATURES_FILE = os.path.join(BASE_DIR, "data", "features", "dataset_features.csv")
-DOC_PATH = os.path.join(BASE_DIR, "doc")
+DOC_PATH = os.path.join(BASE_DIR, "results")
 
 # Style seaborn
 sns.set_theme(style="whitegrid", context="paper", font_scale=1.2)
