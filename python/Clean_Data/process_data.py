@@ -1,9 +1,10 @@
-# process_data.py - VERSION FINALE (Sauvegarde CLEAN + Toutes Métriques LDLJ/F95/ISO)
+# process_data.py - VERSION FINALE (Ancienneté + IPe + IDe + Coefficient Be)
 import os
 import glob
 import pandas as pd
 import numpy as np
 from scipy.signal import butter, filtfilt
+from scipy import stats # Nécessaire pour la régression linéaire (Be)
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -58,7 +59,6 @@ def process_single_trial(df_trial, metadata, pid):
     dt = np.mean(np.diff(time))
     fs = 1 / dt if dt > 0 else 120.0
 
-    # Les données sont DÉJÀ filtrées par le bloc principal avant d'arriver ici
     x_clean = df_trial['X'].values
     y_clean = df_trial['Y'].values
     p_clean = df_trial['P_Raw'].values if 'P_Raw' in df_trial.columns else np.zeros(len(time))
@@ -74,11 +74,9 @@ def process_single_trial(df_trial, metadata, pid):
     
     thickness = df_trial['Thickness'].mean() if 'Thickness' in df_trial.columns else 4.0
 
-    # 2. CALCULS CINÉMATIQUES (Vitesse, Accel, Jerk)
     vel, acc, jerk = get_kinematics(x_clean, y_clean, dt)
     
-    # 3. CALCULS METRIQUES IMAGE (Smoothness)
-    duration = df_trial['Time_Rel'].max() - df_trial['Time_Rel'].min()
+    duration = df_trial['Time_Rel'].max() - df_trial['Time_Rel'].min() # C'est le MT/lap
     path_length = np.sum(np.sqrt(np.diff(x_clean)**2 + np.diff(y_clean)**2))
     
     mean_jerk = np.mean(jerk)
@@ -95,45 +93,55 @@ def process_single_trial(df_trial, metadata, pid):
     radial_pos = np.sqrt((x_clean - cx)**2 + (y_clean - cy)**2)
     f95 = calculate_f95(radial_pos, fs)
 
-    # 4. CALCULS ISO 9241-9 (Précision)
+    # --- 4. CALCULS ISO 9241-9 (Fitts) ---
     Ri = np.sqrt((x_clean - cx)**2 + (y_clean - cy)**2)
     Re = np.mean(Ri)
     sigma_R = np.std(Ri)
     Te = 4.133 * sigma_R
+    
+    # IDe (Effective Index of Difficulty)
     IDe = np.log2((2 * np.pi * Re) / Te) if Te > 0 else 0
+    # IPe (Effective Information Processing Rate - Remplacement de Throughput_ISO)
     IPe = IDe / duration if duration > 0 else 0
     
     error_radial = np.abs(Ri - R_target)
     is_out = (error_radial + thickness/2) > (W_target / 2)
     error_rate = np.mean(is_out) * 100
 
-    # 5. METADATA
     try:
         subject_row = metadata[metadata['ID'].str.upper() == pid.upper()]
         group = subject_row.iloc[0]['Group'] if not subject_row.empty else "Unknown"
-        osats = subject_row.iloc[0]['OSATS_Score'] if not subject_row.empty and 'OSATS_Score' in subject_row.columns else np.nan
-    except: group = "Unknown"; osats = np.nan
+        experience = subject_row.iloc[0]['Experience_Years'] if not subject_row.empty and 'Experience_Years' in subject_row.columns else np.nan
+    except: group = "Unknown"; experience = np.nan
+
+    condition = str(df_trial['Bloc'].iloc[0]) if 'Bloc' in df_trial.columns else "VP"
+    # Simplification de la condition pour regrouper VP_FB et VP_NoFB sous "VP" lors du calcul du Be
+    task_type = 'FVP' if condition.startswith('FVP') else 'VP'
 
     return {
-        'ID': pid, 'Group': group, 'OSATS': osats,
-        'Condition': str(df_trial['Bloc'].iloc[0]) if 'Bloc' in df_trial.columns else "VP",
+        'ID': pid, 'Group': group, 'Experience_Years': experience,
+        'Condition': condition,
+        'Task_Type': task_type,
         'Trial': df_trial['Trial_in_Bloc'].iloc[0] if 'Trial_in_Bloc' in df_trial.columns else 0,
         
-        # TOUTES VOS MÉTRIQUES SONT LÀ :
+        # --- NOUVELLES MÉTRIQUES EXACTES ---
+        'IDe': IDe,             # G. Effective index of difficulty (bit/lap)
+        'IPe': IPe,             # H. Effective information processing rate (bit/s)
+        'Duration': duration,   # F. Movement time per lap (s/lap)
+        
+        # --- AUTRES MÉTRIQUES ---
         'Mean_Jerk': mean_jerk,
         'LDLJ': ldlj,
         'F95': f95,
-        'Throughput_ISO': IPe,
         'Error_Rate': error_rate,
         'Te': Te,
-        'Duration': duration,
         'Path_Length': path_length,
         'Mean_Velocity': np.mean(vel),
         'Force_SD': np.std(p_clean)
     }
 
 if __name__ == "__main__":
-    print("--- TRAITEMENT, SAUVEGARDE CLEAN ET MÉTRIQUES COMPLÈTES ---")
+    print("--- TRAITEMENT, SAUVEGARDE CLEAN ET CALCUL DES MÉTRIQUES (FITTS) ---")
     try:
         meta_df = pd.read_csv(META_PATH, sep=None, engine='python', encoding='utf-8-sig')
         meta_df.columns = meta_df.columns.str.strip()
@@ -148,7 +156,7 @@ if __name__ == "__main__":
             df = pd.read_csv(f)
             pid = str(df['ID'].iloc[0]).strip().upper()
             
-            # --- ÉTAPE A : FILTRAGE GLOBAL ET SAUVEGARDE ---
+            # --- ÉTAPE A : FILTRAGE ---
             time_arr = df['Time_Abs'].values
             fs = 120.0
             if len(time_arr) > 2:
@@ -164,7 +172,7 @@ if __name__ == "__main__":
             clean_file_path = os.path.join(CLEAN_PATH, f"{pid}_CLEAN.csv")
             df_clean.to_csv(clean_file_path, index=False)
             
-            # --- ÉTAPE B : DÉCOUPAGE ET CALCUL DES MÉTRIQUES ---
+            # --- ÉTAPE B : MÉTRIQUES PAR ESSAI ---
             if 'Trial_in_Bloc' not in df_clean.columns:
                 df_clean['New_Trial'] = (df_clean['Time_Rel'].diff() < -0.5) | (df_clean['Time_Rel'].shift(1).isna())
                 df_clean['Trial_Auto'] = df_clean['New_Trial'].cumsum()
@@ -178,10 +186,32 @@ if __name__ == "__main__":
                 feat = process_single_trial(data_essai, meta_df, pid)
                 if feat: all_features.append(feat)
             
-            print(f"-> Traité et Sauvegardé (Clean) : {pid}")
+            print(f"-> Essais traités pour : {pid}")
 
-        except Exception as e: print(f"Erreur {os.path.basename(f)}: {e}")
+        except Exception as e: print(f"Erreur sur {os.path.basename(f)}: {e}")
 
+    # --- ÉTAPE C : CALCUL DU COEFFICIENT Be POUR CHAQUE PARTICIPANT ---
     if all_features:
-        pd.DataFrame(all_features).to_csv(os.path.join(OUTPUT_PATH, "dataset_features.csv"), index=False)
-        print(f"\nSUCCÈS ! Fichiers Clean générés et toutes les features (LDLJ, F95, ISO) extraites.")
+        features_df = pd.DataFrame(all_features)
+        
+        # Initialisation de la colonne Be
+        features_df['Be'] = np.nan
+        
+        # On calcule Be par participant et par grande condition (VP vs FVP)
+        for pid in features_df['ID'].unique():
+            for task in ['VP', 'FVP']:
+                mask = (features_df['ID'] == pid) & (features_df['Task_Type'] == task)
+                subset = features_df[mask]
+                
+                # Il faut au moins 2 points avec des IDe différents pour tracer une droite
+                if len(subset) > 2 and subset['IDe'].nunique() > 1:
+                    # Régression linéaire : MT (Duration) = A + Be * IDe
+                    slope, intercept, r_value, p_value, std_err = stats.linregress(subset['IDe'], subset['Duration'])
+                    # On assigne la pente (slope) à la colonne Be pour tous les essais de ce participant/condition
+                    features_df.loc[mask, 'Be'] = slope
+                elif len(subset) > 0:
+                    features_df.loc[mask, 'Be'] = 0.0 # Pas assez de variabilité pour calculer Be
+
+        # Sauvegarde finale
+        features_df.to_csv(os.path.join(OUTPUT_PATH, "dataset_features.csv"), index=False)
+        print(f"\nSUCCÈS ! Dataset généré avec IPe, IDe et le coefficient Be calculé par régression linéaire.")

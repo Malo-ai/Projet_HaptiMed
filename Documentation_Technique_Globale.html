@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Documentation Scientifique - HaptiMed</title>
+    <title>Documentation Haute Fidélité - HaptiMed</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -17,7 +17,7 @@
     
     <style>
         :root { --bg: #ffffff; --text: #333; --primary: #2c3e50; --secondary: #2980b9; --accent: #e74c3c; --box-bg: #f8f9fa; --border: #dee2e6; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; color: var(--text); max-width: 1000px; margin: 0 auto; padding: 40px; background: var(--bg); }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; color: var(--text); max-width: 1100px; margin: 0 auto; padding: 40px; background: var(--bg); }
         h1 { color: var(--primary); text-align: center; border-bottom: 3px solid var(--secondary); padding-bottom: 15px; margin-bottom: 30px; }
         h2 { color: var(--secondary); margin-top: 50px; border-left: 5px solid var(--secondary); padding-left: 15px; background: var(--box-bg); padding: 12px; }
         h3 { color: var(--primary); border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 35px;}
@@ -26,17 +26,14 @@
         .hypotheses-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 25px 0; }
         .hyp-card { padding: 20px; border-radius: 8px; border-top: 5px solid; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         .hyp-card h4 { margin: 0 0 10px 0; color: var(--primary); }
-        .hyp-card p { margin: 0; font-size: 0.95em; }
         .hyp-tag { display: inline-block; margin-top: 10px; font-size: 0.8em; font-weight: bold; text-transform: uppercase; color: var(--secondary); }
 
         /* Sommaire */
         .toc { background: var(--box-bg); padding: 25px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 40px; }
-        .toc h2 { background: transparent; border: none; padding: 0; margin-top: 0; }
         .toc ul { list-style: none; padding-left: 0; }
-        .toc li { margin-bottom: 15px; font-weight: 600; }
-        .toc a { text-decoration: none; color: var(--secondary); transition: color 0.2s; }
-        .toc a:hover { color: var(--accent); }
-        .toc .file-desc { font-weight: normal; font-size: 0.9em; color: #666; display: block; margin-left: 22px; }
+        .toc li { margin-bottom: 10px; font-weight: 600; }
+        .toc a { text-decoration: none; color: var(--secondary); }
+        .toc .file-desc { font-weight: normal; font-size: 0.85em; color: #666; display: block; margin-left: 20px; }
         
         /* Boîtes Entrées/Sorties */
         .io-container { display: flex; gap: 20px; margin: 20px 0; }
@@ -44,215 +41,144 @@
         .io-in { border-color: #27ae60; }
         .io-out { border-color: #e67e22; }
         
-        /* Accordéon Détails Code */
+        /* Détails Code */
         details { background: var(--box-bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px 18px; margin: 20px 0; }
-        summary { font-weight: bold; cursor: pointer; color: var(--secondary); outline: none; }
+        summary { font-weight: bold; cursor: pointer; color: var(--secondary); }
         .var-name { font-family: 'Consolas', monospace; color: #c0392b; background: #fef5f5; padding: 2px 6px; border-radius: 4px; border: 1px solid #fadbd8; }
+        .lib-link { color: #2980b9; font-weight: bold; text-decoration: none; }
         
-        /* Math & Transition */
-        .math-box { background: #fff; border: 1px dashed #bdc3c7; padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; overflow-x: auto; font-size: 1.1em; }
-        .transition-phrase { font-style: italic; color: #7f8c8d; text-align: right; margin-top: 40px; padding-right: 10px; border-right: 3px solid var(--border); }
-        .lib-link { color: #2980b9; font-weight: bold; text-decoration: none; border-bottom: 1px solid transparent; }
-        .lib-link:hover { border-bottom-color: var(--secondary); }
+        .math-box { background: #fff; border: 1px dashed #bdc3c7; padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; font-size: 1.2em; }
+        .transition-phrase { font-style: italic; color: #7f8c8d; text-align: right; margin-top: 30px; border-right: 3px solid var(--border); padding-right: 10px; }
     </style>
 </head>
 <body>
 
-    <h1>Documentation Technique HaptiMed<br><small>Pipeline de traitement et analyse de l'expertise chirurgicale</small></h1>
+    <h1>Documentation Technique & Scientifique HaptiMed</h1>
 
     <div class="toc">
         <h2>Sommaire des Processus</h2>
         <ul>
             <li><a href="#partie1">1. Protocole Expérimental et Setup</a>
-                <span class="file-desc">Définition scientifique de la cohorte et du dispositif haptique.</span>
-            </li>
+                <span class="file-desc">Définition de la cohorte (Experts/Novices) et des hypothèses H1, H2, H3.</span></li>
             <li><a href="#partie2">2. Calibration de Force (<code>calibration_mvc.py</code>)</a>
-                <span class="file-desc">Détermination de la Contraction Volontaire Maximale (MVC).</span>
-            </li>
+                <span class="file-desc">Normalisation via la Contraction Volontaire Maximale (MVC).</span></li>
             <li><a href="#partie3">3. Acquisition Haute Fréquence (<code>steering_task.py</code>)</a>
-                <span class="file-desc">Capture temps-réel des trajectoires et de la pression (120 Hz).</span>
-            </li>
-            <li><a href="#partie4">4. Prétraitement Cinématique (<code>process_data.py</code>)</a>
-                <span class="file-desc">Filtrage Butterworth et extraction des features (ISO/LDLJ).</span>
-            </li>
-            <li><a href="#partie5">5. Analyse Inférentielle (<code>analysis_publication.py</code>)</a>
-                <span class="file-desc">Tests statistiques de Welch, Cohen's d et formatage APA.</span>
-            </li>
-            <li><a href="#partie6">6. Modélisation Prédictive (<code>analysis_ml.py</code>)</a>
-                <span class="file-desc">Classification Expert/Novice par Intelligence Artificielle.</span>
-            </li>
+                <span class="file-desc">Capture sub-pixel 120Hz des trajectoires et pressions axiales.</span></li>
+            <li><a href="#partie4">4. Traitement Cinématique (<code>process_data.py</code>)</a>
+                <span class="file-desc">Filtrage Butterworth et calcul des métriques ISO (IPe, IDe, Be) et Smoothness (LDLJ).</span></li>
+            <li><a href="#partie5">5. Analyse Inférentielle (<code>analysis_master.py</code>)</a>
+                <span class="file-desc">Validation statistique (T-test, Cohen's d) et tableaux APA.</span></li>
+            <li><a href="#partie6">6. Machine Learning (<code>analysis_ml.py</code>)</a>
+                <span class="file-desc">Classification prédictive par Random Forest (Comparaison VP vs FVP).</span></li>
         </ul>
     </div>
 
-    <h2 id="partie1">1. Protocole Expérimental et Setup</h2>
-    <p>Ce protocole vise à comparer la signature motrice d'experts et de novices lors d'une tâche de navigation guidée sous contrainte de force.</p>
-    
-    <h3>Question de Recherche & Hypothèses</h3>
-    <p><b>Problématique :</b> Comment l'intégration d'une contrainte de force axiale influence-t-elle la cinématique, le compromis vitesse-précision et la fluidité gestuelle chez les chirurgiens experts par rapport aux novices ?</p>
+    <h2 id="partie1">1. Protocole Expérimental et Hypothèses</h2>
+    <p>Cette étude vise à quantifier l'expertise chirurgicale par l'intégration d'une contrainte de force axiale dans une tâche de pilotage (Steering Task).</p>
 
     <div class="hypotheses-grid">
         <div class="hyp-card" style="border-top-color: #3498db;">
-            <h4>H1 : Validité Clinique (Le "Qui")</h4>
-            <p>Le score de performance sur tablette (Steering) permet de classer les chirurgiens de la même manière que la note clinique standardisée <b>OSATS</b>.</p>
-            <span class="hyp-tag">Corrélation de Spearman</span>
+            <h4>H1 : Performance ISO</h4>
+            <p>Le Throughput effectif ($IP_e$) suffit à discriminer les groupes en condition classique.</p>
+            <span class="hyp-tag">Indice de performance</span>
         </div>
         <div class="hyp-card" style="border-top-color: #9b59b6;">
-            <h4>H2 : Sensibilité (Le "Petit plus")</h4>
-            <p>Les mesures cinématiques objectives sont plus fines que l'œil humain pour différencier des profils ayant pourtant le même score OSATS.</p>
-            <span class="hyp-tag">Analyse de Variance Résiduelle</span>
+            <h4>H2 : Interaction Haptique</h4>
+            <p>L'ajout de force (FVP) dégrade la performance des novices mais pas celle des experts.</p>
+            <span class="hyp-tag">Résilience motrice</span>
         </div>
         <div class="hyp-card" style="border-top-color: #27ae60;">
-            <h4>H3 : Compromis 3D (Force-Vitesse-Précision)</h4>
-            <p>L'introduction de la contrainte de force axiale (FVP) altère significativement la constante de performance de la Loi de Steering (Throughput) chez les novices, tandis que les experts maintiennent un compromis stable.</p>
-            <span class="hyp-tag">Interaction Groupe × Condition (Throughput)</span>
+            <h4>H3 : Fluidité (LDLJ)</h4>
+            <p>Les experts présentent un geste plus fluide (moindre Jerk) que les novices.</p>
+            <span class="hyp-tag">Qualité cinématique</span>
         </div>
         <div class="hyp-card" style="border-top-color: #e67e22;">
-            <h4>H4 : Signature Motrice (La Qualité)</h4>
-            <p>Le geste de l'expert est significativement plus fluide (moins de saccades) et stable que celui du novice (contrôle prédictif).</p>
-            <span class="hyp-tag">LDLJ (Log Dimensionless Jerk)</span>
+            <h4>Validité Clinique</h4>
+            <p>Forte corrélation entre les scores de la tablette et l'ancienneté réelle du praticien.</p>
+            <span class="hyp-tag">Ancienneté (Années)</span>
         </div>
     </div>
 
-    <h3>Consignes et Schéma de l'expérience</h3>
-    
-    <ul>
-        <li><b>Cohorte :</b> Sujets Experts (Chirurgiens) vs Novices (Étudiants).</li>
-        <li><b>Tâche :</b> Effectuer un tour complet dans un tunnel circulaire de rayon $R$ et largeur $W$.</li>
-        <li><b>Conditions :</b> VP (Vitesse-Précision) et FVP (Force-Vitesse-Précision).</li>
-    </ul>
-
-    <p class="transition-phrase">➔ Une fois le sujet installé, nous procédons à la calibration physique de son profil de force.</p>
-
-    <hr>
-
     <h2 id="partie2">2. Calibration de Force (<code>calibration_mvc.py</code>)</h2>
-    <h3>Objectif et Justification</h3>
-    <p>Normaliser l'effort haptique en fonction des capacités physiques intrinsèques de chaque individu pour garantir une comparaison inter-sujets équitable.</p>
+    <p>Normalise l'effort requis durant la tâche FVP en fonction de la force maximale du sujet.</p>
     
     <div class="io-container">
-        <div class="io-box io-in"><b>Entrée :</b> Signal continu de pression $P \in [0.0, 1.0]$.</div>
-        <div class="io-box io-out"><b>Sortie :</b> Valeur maximale $MVC \in [0, 8192]$ enregistrée dans <code>last_mvc.txt</code>.</div>
+        <div class="io-box io-in"><b>Entrée :</b> Événements de pression brute via le driver Wacom.</div>
+        <div class="io-box io-out"><b>Sortie :</b> Fichier <code>last_mvc.txt</code> (Valeur 0-8192).</div>
     </div>
 
-    <h3>Bibliothèques</h3>
-    <ul>
-        <li><a class="lib-link" href="https://doc.qt.io/qtforpython-6/">PyQt6</a> : Gestion de l'interface et du matériel (QTabletEvent).</li>
-    </ul>
-
     <details>
-        <summary>Détail de l'architecture et variables</summary>
-        <p>Le script utilise une boucle d'écoute événementielle. Si la pression actuelle dépasse le maximum stocké, la valeur est mise à jour.</p>
+        <summary>Détails Techniques & Bibliothèques</summary>
         <ul>
-            <li><span class="var-name">event.pressure()</span> : Pression normalisée par le driver.</li>
-            <li><span class="var-name">RAW_MAX</span> : 8192 (Résolution Wacom Pro Pen 3).</li>
+            <li><a class="lib-link" href="https://doc.qt.io/qtforpython-6/">PyQt6</a> : Utilisation de <span class="var-name">QTabletEvent</span> pour une capture haute précision.</li>
+            <li><span class="var-name">event.pressure()</span> : Récupère la pression normalisée (0.0 à 1.0).</li>
         </ul>
     </details>
-
-    <p class="transition-phrase">➔ Le profil de force étant établi, le sujet peut lancer la tâche d'acquisition.</p>
-
-    <hr>
 
     <h2 id="partie3">3. Acquisition (<code>steering_task.py</code>)</h2>
-    <h3>Objectif et Justification</h3>
-    <p>Capturer la performance motrice brute. La fréquence d'échantillonnage de 120 Hz est choisie pour respecter le critère de Nyquist vis-à-vis du tremblement physiologique (8-12 Hz).</p>
+    <p>Interface interactive simulant un tunnel chirurgical circulaire.</p>
 
     <div class="math-box">
-        $$ f_s \ge 2 \cdot f_{max} $$
+        $$ f_s = 120 \text{ Hz} \quad \text{(Respect du critère de Nyquist-Shannon)} $$
     </div>
 
-    <h3>Bibliothèques</h3>
-    <ul>
-        <li><a class="lib-link" href="https://doc.qt.io/qtforpython-6/">PyQt6</a> : Rendu graphique (QPainter) et capture sub-pixel.</li>
-        <li><a class="lib-link" href="https://numpy.org/">NumPy</a> : Calculs géométriques en temps réel.</li>
-    </ul>
+    <div class="io-container">
+        <div class="io-box io-in"><b>Entrée :</b> Rayon $R$ et Largeur $W$ du tunnel.</div>
+        <div class="io-box io-out"><b>Sortie :</b> Fichier CSV <code>ID_RAW.csv</code> (X, Y, Pression, Temps).</div>
+    </div>
 
     <details>
-        <summary>Détail de l'architecture et variables</summary>
+        <summary>Variables du Code</summary>
         <ul>
-            <li><span class="var-name">Time_Abs</span> : Temps Unix (s).</li>
-            <li><span class="var-name">QPointF</span> : Coordonnées X, Y en précision flottante.</li>
+            <li><span class="var-name">QPainter</span> : Rendu vectoriel du tunnel et du feedback de force (épaisseur du trait).</li>
+            <li><span class="var-name">Time_Abs</span> : Horodatage précis pour le calcul des dérivées ultérieures.</li>
         </ul>
     </details>
 
-    <p class="transition-phrase">➔ Les données brutes (RAW) sont ensuite transmises au moteur de traitement post-hoc.</p>
-
-    <hr>
-
-    <h2 id="partie4">4. Traitement (<code>process_data.py</code>)</h2>
-    <h3>Objectif et Justification</h3>
-    <p>Filtrer le bruit haute fréquence et extraire les métriques de la Loi de Steering (ISO 9241-9) et de fluidité (LDLJ).</p>
-    
-    
+    <h2 id="partie4">4. Traitement Cinématique (<code>process_data.py</code>)</h2>
+    <p>Nettoyage des signaux et calcul des métriques biomécaniques avancées.</p>
 
     <div class="math-box">
-        $$ LDLJ = \ln \left( \frac{MT^5}{L^2} \int_{0}^{MT} |jerk(t)|^2 dt \right) $$
-        $$ T_e = 4.133 \cdot \sigma_R $$
+        $$ LDLJ = \ln \left( \frac{MT^5}{L^2} \int |jerk|^2 dt \right) $$
+        $$ IP_e = \frac{ID_e}{MT} \quad ; \quad MT = a + b \cdot ID_e $$
     </div>
 
-    <h3>Bibliothèques</h3>
-    <ul>
-        <li><a class="lib-link" href="https://scipy.org/">SciPy</a> : Filtre de Butterworth (filtfilt) pour un lissage sans déphasage.</li>
-        <li><a class="lib-link" href="https://pandas.pydata.org/">Pandas</a> : Structuration du dataset final.</li>
-    </ul>
-
     <details>
-        <summary>Détail de l'architecture et variables</summary>
+        <summary>Algorithmes & Filtres</summary>
         <ul>
-            <li><span class="var-name">np.gradient()</span> : Dérivées numériques pour la vitesse et le jerk.</li>
-            <li><span class="var-name">Throughput_ISO</span> : Indice de performance effectif.</li>
+            <li><a class="lib-link" href="https://scipy.org/">SciPy</a> : Filtre de Butterworth d'ordre 2 (Coupure 10Hz) via <span class="var-name">filtfilt</span>.</li>
+            <li><span class="var-name">np.gradient</span> : Calcul des vecteurs Vitesse, Accélération et Jerk.</li>
+            <li><span class="var-name">stats.linregress</span> : Extraction du coefficient <span class="var-name">Be</span> (pente de Fitts).</li>
         </ul>
     </details>
 
-    <p class="transition-phrase">➔ Le dataset de "features" est prêt pour la validation statistique.</p>
-
-    <hr>
-
-    <h2 id="partie5">5. Analyse Inférentielle (<code>analysis_publication.py</code>)</h2>
-    <h3>Objectif et Justification</h3>
-    <p>Valider les hypothèses de recherche par des tests statistiques rigoureux (Welch t-test, ANOVA) et mesurer la force de la différence par le d de Cohen.</p>
+    <h2 id="partie5">5. Analyse Inférentielle (<code>analysis_master.py</code>)</h2>
+    <p>Génération de preuves statistiques pour valider les hypothèses H1, H2 et H3.</p>
 
     <div class="math-box">
-        $$ d = \frac{\bar{x}_1 - \bar{x}_2}{s_{pooled}} $$
+        $$ d = \frac{\bar{x}_E - \bar{x}_N}{s_{pooled}} \quad \text{(Taille de l'effet de Cohen)} $$
     </div>
 
-    <h3>Bibliothèques</h3>
-    <ul>
-        <li><a class="lib-link" href="https://scipy.org/">SciPy Stats</a> : Calcul des p-values et intervalles de confiance.</li>
-    </ul>
+    <div class="io-container">
+        <div class="io-box io-in"><b>Entrée :</b> <code>dataset_features.csv</code>.</div>
+        <div class="io-box io-out"><b>Sortie :</b> Tableaux APA (.xlsx) et Boxplots (.png).</div>
+    </div>
+
+    <h2 id="partie6">6. Modélisation par IA (<code>analysis_ml.py</code>)</h2>
+    <p>Utilisation d'un classifieur pour automatiser le diagnostic du niveau d'expertise.</p>
 
     <details>
-        <summary>Détail de l'architecture et variables</summary>
+        <summary>Architecture du Modèle</summary>
         <ul>
-            <li><span class="var-name">p-value</span> : Seuil de significativité (souvent 0.05).</li>
-            <li><span class="var-name">Cohen's d</span> : Taille de l'effet biomécanique.</li>
+            <li><a class="lib-link" href="https://scikit-learn.org/">Scikit-Learn</a> : Algorithme <b>Random Forest</b> (100 arbres).</li>
+            <li><b>Validation :</b> Leave-One-Out Cross-Validation (LOO CV).</li>
+            <li><b>Métriques :</b> Accuracy et Matrice de Confusion.</li>
         </ul>
     </details>
 
-    <p class="transition-phrase">➔ La dernière étape consiste à entraîner une IA pour automatiser le diagnostic de l'expertise.</p>
-
-    <hr>
-
-    <h2 id="partie6">6. Machine Learning (<code>analysis_ml.py</code>)</h2>
-    <h3>Objectif et Justification</h3>
-    <p>Prédire l'appartenance à un groupe (Expert vs Novice). La validation croisée Leave-One-Out est utilisée pour garantir la robustesse sur des échantillons cliniques réduits.</p>
-
     <div class="math-box">
-        $$ \text{Précision} = \frac{VP + VN}{Total} $$
+        $$ \text{Gain de performance de l'IA} = Acc_{FVP} - Acc_{VP} $$
     </div>
-
-    <h3>Bibliothèques</h3>
-    <ul>
-        <li><a class="lib-link" href="https://scikit-learn.org/">Scikit-Learn</a> : Random Forest Classifier et métriques de validation.</li>
-        <li><a class="lib-link" href="https://seaborn.pydata.org/">Seaborn</a> : Visualisation des matrices de confusion.</li>
-    </ul>
-
-    <details>
-        <summary>Détail de l'architecture et variables</summary>
-        <ul>
-            <li><span class="var-name">Feature Importance</span> : Poids des variables biomécaniques dans la décision de l'IA.</li>
-            <li><span class="var-name">Confusion Matrix</span> : Tableau de contingence des erreurs.</li>
-        </ul>
-    </details>
 
 </body>
 </html>
