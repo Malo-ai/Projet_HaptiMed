@@ -9,7 +9,7 @@ from PyQt6.QtMultimedia import QSoundEffect
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "0"
 os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "0"
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_RAW_PATH = os.path.join(BASE_DIR, "data", "raw")
 
 if not os.path.exists(DATA_RAW_PATH):
@@ -22,11 +22,14 @@ CONFIG = {
     "FORCE_TOLERANCE_PCT": 20, 
     "RAW_MAX": 8192,
     "BASE_THICKNESS": 6,        
+    # --- NOUVEAUX PARAMÈTRES POUR LE FEEDBACK D'ÉPAISSEUR ---
+    "MIN_THICKNESS": 2,         # Épaisseur si la pression est à 0
+    "MAX_THICKNESS": 25,        # Épaisseur si la pression est au max (RAW_MAX)
     "TEMPS_MAX_ESSAI": 15, 
     "TEMPS_REPOS": 3, 
     "TEMPS_PAUSE_LONGUE": 20,
     "REPS_PER_ID": 10,          
-    "STATIONARY_DELAY": 0.5, # 500ms d'attente sur la croix   
+    "STATIONARY_DELAY": 0.5, 
     "VELOCITY_THRESHOLD": 10.0
 }
 
@@ -95,12 +98,15 @@ class InstructionDialog(QDialog):
         instr += "Allez le plus vite possible tout en restant dans le tunnel.<br>"
 
         if has_feedback:
-            instr += "• Un trait de couleur suivra votre stylet.<br>"
+            instr += "• Un trait suivra votre stylet.<br>"
             instr += "• Si vous sortez du tunnel, le tracé devient <b style='color:red;'>ROUGE</b>.<br>"
             if task_type == "FVP":
-                instr += "• Force correcte = <b style='color:green;'>VERT</b>.<br>"
-                instr += "• Pression trop faible = <b style='color:blue;'>BLEU</b>.<br>"
-                instr += "• Pression trop forte = <b style='color:orange;'>ORANGE</b>.<br>"
+                # --- NOUVELLES CONSIGNES D'ÉPAISSEUR ---
+                instr += "• Le tracé reste <b style='color:green;'>VERT</b> si vous êtes dans le tunnel.<br>"
+                instr += "• <b style='color:purple;'>NOUVEAUTÉ : L'épaisseur du trait dépend de votre force.</b><br>"
+                instr += "• Pression forte = Trait épais.<br>"
+                instr += "• Pression faible = Trait fin.<br>"
+                instr += "• Essayez de maintenir un trait d'épaisseur régulière, correspondant à la force demandée au départ.<br>"
             else:
                 instr += "• Tracé correct = <b style='color:green;'>VERT</b>.<br>"
         else:
@@ -155,8 +161,6 @@ class SteeringExpe(QWidget):
             self.sequence.extend(essais_bloc)
             
         self.seq_index = 0
-        
-        # NOUVEAU : Flag pour savoir si on est en mode pratique
         self.is_practice = True
         self.state = "WAIT_POS" 
         
@@ -166,18 +170,25 @@ class SteeringExpe(QWidget):
     def tabletEvent(self, e: QTabletEvent):
         self.pressure = e.pressure(); self.pos = e.position(); e.accept()
 
-    def get_pointer_color(self, px, py, pressure, R, W):
+    # --- MODIFICATION DE LA COULEUR ---
+    def get_pointer_color(self, px, py, R, W):
         dist_c = math.sqrt((px - self.width()/2)**2 + (py - self.height()/2)**2)
         erreur_radiale = abs(dist_c - R)
         
+        # Le trait devient toujours rouge si on sort du tunnel, 
+        # sinon il reste vert. On n'utilise plus bleu/orange pour la force.
         if erreur_radiale > (W / 2): return Qt.GlobalColor.red 
-        
-        if self.sequence[self.seq_index]["Task"] == "FVP":
-            current_force = pressure * CONFIG["RAW_MAX"]
-            if current_force < self.f_min: return Qt.GlobalColor.blue 
-            elif current_force > self.f_max: return QColor("orange")
-            
         return Qt.GlobalColor.green
+
+    # --- NOUVELLE FONCTION POUR CALCULER L'ÉPAISSEUR ---
+    def get_pointer_thickness(self, pressure, task_type):
+        if task_type == "FVP":
+            # Calcule l'épaisseur en fonction de la pression (0.0 à 1.0)
+            thickness_range = CONFIG["MAX_THICKNESS"] - CONFIG["MIN_THICKNESS"]
+            return CONFIG["MIN_THICKNESS"] + (pressure * thickness_range)
+        else:
+            # Si c'est juste VP, le trait a une épaisseur constante
+            return CONFIG["BASE_THICKNESS"]
 
     def game_loop(self):
         t = time.perf_counter(); cx, cy = self.width()/2, self.height()/2
@@ -220,7 +231,10 @@ class SteeringExpe(QWidget):
     def collect_data(self, t):
         px, py = self.pos.x(), self.pos.y(); cx, cy = self.width()/2, self.height()/2
         R = self.sequence[self.seq_index]["R"]; W = self.sequence[self.seq_index]["W"]
-        thickness = CONFIG["BASE_THICKNESS"] 
+        task_type = self.sequence[self.seq_index]["Task"]
+        
+        # --- CALCUL DE L'ÉPAISSEUR DYNAMIQUE ---
+        thickness = self.get_pointer_thickness(self.pressure, task_type)
         
         if not self.movement_started:
             dt = t - self.prev_t
@@ -233,8 +247,8 @@ class SteeringExpe(QWidget):
         in_t = 1 if erreur_radiale <= (W / 2) else 0 
         angle = math.atan2(py - cy, px - cx)
         
-        # Le feedback visuel fonctionne même en Pratique si c'est la condition
-        col = self.get_pointer_color(px, py, self.pressure, R, W)
+        # On ne passe plus la pression à get_pointer_color
+        col = self.get_pointer_color(px, py, R, W)
         
         self.buffer_raw.append([t, t-self.actual_start_t, px, py, self.pressure * CONFIG["RAW_MAX"], thickness, erreur_radiale, in_t, angle])
         self.current_trajectory.append((QPointF(px, py), thickness, col))
@@ -253,14 +267,12 @@ class SteeringExpe(QWidget):
             w.writerows(data_list)
 
     def end_trial(self, timeout=False):
-        # --- NOUVEAU : GESTION DE LA PRATIQUE ---
         if self.is_practice:
             self.buffer_raw = []
             self.current_trajectory = []
             self.state = "PRACTICE_END"
             return
             
-        # Code normal de sauvegarde si ce n'est pas de la pratique
         t_info = self.sequence[self.seq_index]; bloc_id = f"{t_info['Task']}_{'FB' if t_info['Feedback'] else 'NoFB'}"
         if self.buffer_raw:
             raw_to_save = [[self.pid, bloc_id, t_info["IDc_Level"], t_info["Rep_Geo"], t_info["R"], t_info["W"], t_info["Trial_in_Block"]] + r for r in self.buffer_raw]
@@ -281,12 +293,10 @@ class SteeringExpe(QWidget):
             if old_bloc != new_bloc:
                 instr = InstructionDialog(new_bloc[0], new_bloc[1], is_first=False)
                 instr.exec()
-                # On relance un mode test pour la nouvelle condition
                 self.is_practice = True
             self.state = "WAIT_POS"
 
     def closeEvent(self, event):
-        # Sauvegarde de secours si on fait ECHAP pendant un VRAI essai
         if self.state == "RECORDING" and not self.is_practice: 
             self.end_trial(timeout=True)
         event.accept()
@@ -298,7 +308,6 @@ class SteeringExpe(QWidget):
             p.setPen(Qt.GlobalColor.white); p.setFont(QFont("Arial", 30))
             p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "FIN DE L'EXPÉRIENCE\n\n[ ECHAP ]"); return
             
-        # --- NOUVEL ÉCRAN DE TRANSITION APRÈS LA PRATIQUE ---
         if self.state == "PRACTICE_END":
             p.setPen(Qt.GlobalColor.cyan); p.setFont(QFont("Arial", 30, QFont.Weight.Bold))
             p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "ESSAI DE TEST TERMINÉ\n\nAppuyez sur [ ESPACE ] pour lancer les vrais enregistrements.")
@@ -315,8 +324,8 @@ class SteeringExpe(QWidget):
 
         R = self.sequence[self.seq_index]["R"]; W = self.sequence[self.seq_index]["W"]
         has_feedback = self.sequence[self.seq_index]["Feedback"]
+        task_type = self.sequence[self.seq_index]["Task"]
         
-        # Affiche le numéro de l'essai ou "MODE TEST"
         p.setFont(QFont("Arial", 16))
         if self.is_practice:
             p.setPen(Qt.GlobalColor.cyan)
@@ -341,7 +350,7 @@ class SteeringExpe(QWidget):
             
             color = Qt.GlobalColor.red 
             if dist < 30:
-                is_good_force = (self.f_min <= current_force <= self.f_max) if self.sequence[self.seq_index]["Task"] == "FVP" else (self.pressure > 0.05)
+                is_good_force = (self.f_min <= current_force <= self.f_max) if task_type == "FVP" else (self.pressure > 0.05)
                 if is_good_force: color = Qt.GlobalColor.green
                 
             p.setPen(QPen(color, 4))
@@ -356,8 +365,9 @@ class SteeringExpe(QWidget):
                 p.setPen(Qt.GlobalColor.green); p.setFont(QFont("Arial", 120, QFont.Weight.Bold))
                 p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "GO !")
         
-        current_th = CONFIG["BASE_THICKNESS"]
-        col_pointer = self.get_pointer_color(self.pos.x(), self.pos.y(), self.pressure, R, W) if has_feedback else Qt.GlobalColor.lightGray
+        # --- MISE À JOUR DE L'AFFICHAGE DU POINTEUR EN DIRECT ---
+        current_th = self.get_pointer_thickness(self.pressure, task_type)
+        col_pointer = self.get_pointer_color(self.pos.x(), self.pos.y(), R, W) if has_feedback else Qt.GlobalColor.lightGray
         
         p.setBrush(col_pointer); p.setPen(QPen(Qt.GlobalColor.black, 1))
         p.drawEllipse(self.pos, current_th/2 + 2, current_th/2 + 2)

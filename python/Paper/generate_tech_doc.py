@@ -1,7 +1,7 @@
 import os
 
 # --- CONFIGURATION DES CHEMINS ---
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DOC_PATH = os.path.join(BASE_DIR, "doc")
 if not os.path.exists(DOC_PATH): 
     os.makedirs(DOC_PATH)

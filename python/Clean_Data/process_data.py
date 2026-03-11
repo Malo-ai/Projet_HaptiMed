@@ -6,7 +6,8 @@ import numpy as np
 from scipy.signal import butter, filtfilt
 
 # --- CONFIGURATION ---
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))RAW_PATH = os.path.join(BASE_DIR, "data", "raw")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+RAW_PATH = os.path.join(BASE_DIR, "data", "raw")
 CLEAN_PATH = os.path.join(BASE_DIR, "data", "clean")
 META_PATH = os.path.join(BASE_DIR, "data", "metadata.csv")
 OUTPUT_PATH = os.path.join(BASE_DIR, "data", "features")

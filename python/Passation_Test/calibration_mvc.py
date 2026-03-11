@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLa
 from PyQt6.QtGui import QTabletEvent, QFont
 from PyQt6.QtCore import Qt
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_PATH = os.path.join(BASE_DIR, "data")
 if not os.path.exists(DATA_PATH): os.makedirs(DATA_PATH)
 

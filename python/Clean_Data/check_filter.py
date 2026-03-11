@@ -5,8 +5,7 @@ from scipy.signal import butter, filtfilt
 import os
 
 # --- CONFIGURATION ---
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# Choisis un fichier RAW de test qui existe encore
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))# Choisis un fichier RAW de test qui existe encore
 FILE_PATH = os.path.join(BASE_DIR, "data", "raw", "PILOT_01_RAW.csv") 
 
 def butter_lowpass_filter(data, cutoff, fs, order=2):

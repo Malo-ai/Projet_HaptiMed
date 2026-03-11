@@ -8,7 +8,7 @@ from sklearn.model_selection import LeaveOneOut
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix, accuracy_score
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FEATURES_FILE = os.path.join(BASE_DIR, "data", "features", "dataset_features.csv")
 DOC_PATH = os.path.join(BASE_DIR, "doc")
 

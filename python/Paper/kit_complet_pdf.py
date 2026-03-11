@@ -144,7 +144,7 @@ def create_guide_utilisateur():
     pdf.cell(0, 6, clean_text("Étape 2.1 : Calibration de la Force (MVC)"), 0, 1)
     pdf.set_font('Courier', '', 10)
     pdf.set_fill_color(240, 240, 240) # Fond gris clair pour le code
-    pdf.cell(0, 6, "python calibration_mvc.py", 0, 1, fill=True)
+    pdf.cell(0, 6, "python Passation_Test\\calibration_mvc.py", 0, 1, fill=True)
     pdf.set_font('Arial', '', 10)
     pdf.multi_cell(0, 5, clean_text("Action : Le sujet appuie fermement avec le stylet. Appuyez sur ESPACE pour enregistrer la MVC."))
     pdf.ln(3)
@@ -152,7 +152,7 @@ def create_guide_utilisateur():
     pdf.set_font('Arial', 'B', 11)
     pdf.cell(0, 6, clean_text("Étape 2.2 : Tâche de Navigation (Steering Task)"), 0, 1)
     pdf.set_font('Courier', '', 10)
-    pdf.cell(0, 6, "python steering_task.py", 0, 1, fill=True)
+    pdf.cell(0, 6, "python Passation_Test\\steering_task.py", 0, 1, fill=True)
     pdf.set_font('Arial', '', 10)
     pdf.multi_cell(0, 5, clean_text("1. Configuration : Entrez l'ID du sujet (ex: P01). Cliquez sur OK.\n"
                                     "2. Consignes & Mode TEST : Lecture des consignes (ESPACE). Le sujet s'entraîne avec le tracé cyan (Non enregistré). Appuyez sur ESPACE à la fin.\n"
@@ -165,14 +165,13 @@ def create_guide_utilisateur():
     pdf.cell(0, 8, clean_text("PHASE 3 : Traitement et Analyse (Fin de journée)"), 0, 1)
     pdf.set_text_color(0, 0, 0)
     pdf.set_font('Arial', '', 11)
-    pdf.cell(0, 6, clean_text("Exécutez ces scripts un par un dans l'ordre :"), 0, 1)
+    pdf.cell(0, 6, clean_text("Exécutez ces scripts un par un dans l'ordre (depuis C:\Projet_HaptiMed\python) :"), 0, 1)
     
     pdf.set_font('Courier', '', 10)
-    pdf.cell(0, 6, "python process_data.py           # 1. Nettoyage et Calculs", 0, 1, fill=True)
-    pdf.cell(0, 6, "python analysis_publication.py   # 2. Statistiques (Norme APA)", 0, 1, fill=True)
-    pdf.cell(0, 6, "python analysis_global.py        #    et Graphiques", 0, 1, fill=True)
-    pdf.cell(0, 6, "python analysis_ml.py            # 3. Machine Learning (IA)", 0, 1, fill=True)
-    pdf.cell(0, 6, "python generate_master_report.py # 4. Rapport Final HTML", 0, 1, fill=True)
+    pdf.cell(0, 6, "python Clean_Data\\process_data.py          # 1. Nettoyage et Calculs", 0, 1, fill=True)
+    pdf.cell(0, 6, "python Process_Stat\\analysis_master.py     # 2. Stats APA & Graphiques", 0, 1, fill=True)
+    pdf.cell(0, 6, "python Process_Stat\\analysis_ml.py         # 3. Machine Learning (IA)", 0, 1, fill=True)
+    pdf.cell(0, 6, "python Paper\\generate_master_report.py     # 4. Rapport Final HTML", 0, 1, fill=True)
     pdf.ln(3)
 
     # Phase 4
@@ -184,7 +183,7 @@ def create_guide_utilisateur():
     pdf.cell(0, 6, clean_text("En fin de semaine, sauvegardez votre code sur GitHub :"), 0, 1)
     
     pdf.set_font('Courier', '', 10)
-    pdf.cell(0, 6, "cd C:\Projet_HaptiMed", 0, 1, fill=True)
+    pdf.cell(0, 6, "cd C:\\Projet_HaptiMed", 0, 1, fill=True)
     pdf.cell(0, 6, "git add .", 0, 1, fill=True)
     pdf.cell(0, 6, "git commit -m \"Mise a jour suite aux passations\"", 0, 1, fill=True)
     pdf.cell(0, 6, "git push", 0, 1, fill=True)
@@ -196,5 +195,5 @@ if __name__ == "__main__":
     create_fiche_info()
     create_consentement()
     create_tableau_suivi()
-    create_guide_utilisateur() # Appel du nouveau guide !
-    print("Succès ! Les 4 fiches PDF (y compris le Guide Utilisateur) ont été générées et rangées.")
+    create_guide_utilisateur() 
+    print("Succès ! Les 4 fiches PDF (y compris le Guide Utilisateur) ont été générées.")
