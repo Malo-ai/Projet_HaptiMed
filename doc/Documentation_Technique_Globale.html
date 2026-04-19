@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Documentation Scientifique - HaptiMed</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" 
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ]
+        });">
+    </script>
+    
+    <style>
+        :root { --bg: #ffffff; --text: #333; --primary: #2c3e50; --secondary: #2980b9; --accent: #e74c3c; --box-bg: #f8f9fa; --border: #dee2e6; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; color: var(--text); max-width: 1100px; margin: 0 auto; padding: 40px; background: var(--bg); }
+        h1 { color: var(--primary); text-align: center; border-bottom: 3px solid var(--secondary); padding-bottom: 15px; margin-bottom: 30px; }
+        h2 { color: var(--secondary); margin-top: 50px; border-left: 5px solid var(--secondary); padding-left: 15px; background: var(--box-bg); padding: 12px; }
+        
+        /* Grille des Hypothèses */
+        .hypotheses-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 25px 0; }
+        .hyp-card { padding: 20px; border-radius: 8px; border-top: 5px solid; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .hyp-card h4 { margin: 0 0 10px 0; color: var(--primary); }
+        .hyp-tag { display: inline-block; margin-top: 10px; font-size: 0.8em; font-weight: bold; text-transform: uppercase; color: var(--secondary); }
+
+        /* Sommaire */
+        .toc { background: var(--box-bg); padding: 25px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 40px; }
+        .toc ul { list-style: none; padding-left: 0; }
+        .toc li { margin-bottom: 15px; font-weight: 600; }
+        .toc a { text-decoration: none; color: var(--secondary); }
+        .toc .file-desc { font-weight: normal; font-size: 0.85em; color: #666; display: block; margin-left: 20px; }
+        
+        /* Boîtes Entrées/Sorties */
+        .io-container { display: flex; gap: 20px; margin: 20px 0; }
+        .io-box { flex: 1; padding: 15px; border-radius: 6px; border-left: 5px solid; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); font-size: 0.9em; }
+        .io-in { border-color: #27ae60; }
+        .io-out { border-color: #e67e22; }
+        
+        /* Détails Code */
+        details { background: var(--box-bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px 18px; margin: 20px 0; }
+        summary { font-weight: bold; cursor: pointer; color: var(--secondary); }
+        .var-name { font-family: 'Consolas', monospace; color: #c0392b; background: #fef5f5; padding: 2px 6px; border-radius: 4px; border: 1px solid #fadbd8; }
+        
+        .math-box { background: #fff; border: 1px dashed #bdc3c7; padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+
+    <h1>Documentation Technique & Scientifique HaptiMed</h1>
+
+    <div class="toc">
+        <h2>Sommaire du Pipeline Analytique</h2>
+        <ul>
+            <li><a href="#partie1">0. Prérequis & Traitement du Signal (<code>process_data.py</code>)</a>
+                <span class="file-desc">Filtrage Butterworth, extraction cinématique et calcul des erreurs spatiales et haptiques.</span></li>
+            <li><a href="#partie2">1. H1 : Efficience Motrice (<code>04_statistical_analysis.py</code>)</a>
+                <span class="file-desc">Analyse du compromis Vitesse-Précision via l'Index de Performance (IPe).</span></li>
+            <li><a href="#partie3">2. H2 : Asymétrie et Charge Cognitive (<code>05_Analyse_interaction.py</code>)</a>
+                <span class="file-desc">Analyse de la dégradation des performances face à l'incertitude haptique.</span></li>
+            <li><a href="#partie4">3. H3 : Signature Dynamique (<code>08_dynamic_signature.py</code>)</a>
+                <span class="file-desc">Étude de l'entropie et du couplage temporel Force-Vitesse (Contrôle Prédictif).</span></li>
+            <li><a href="#partie5">4. Modélisations Avancées (<code>09_2D_Matrix.py</code> & <code>10_regression.py</code>)</a>
+                <span class="file-desc">Visualisation multivariée et démonstration de l'effet plafond par régression continue.</span></li>
+        </ul>
+    </div>
+
+    <h2 id="partie1">Le Cadre Scientifique et les Hypothèses</h2>
+    <p>Ce projet vise à modéliser la dextérité chirurgicale endonasale en quantifiant le comportement sensorimoteur d'internes et d'experts face à une tâche de "Steering" instrumentée.</p>
+
+    <div class="hypotheses-grid">
+        <div class="hyp-card" style="border-top-color: #3498db;">
+            <h4>H1 : Efficience Globale</h4>
+            <p>Les experts optimisent le compromis Vitesse-Précision ($IPe$) comparativement aux novices sur une tâche standard.</p>
+            <span class="hyp-tag">Script 04</span>
+        </div>
+        <div class="hyp-card" style="border-top-color: #9b59b6;">
+            <h4>H2 : Asymétrie Haptique</h4>
+            <p>L'ajout d'une contrainte de pression constante (FVP) dégrade la performance des novices de manière disproportionnée.</p>
+            <span class="hyp-tag">Script 05</span>
+        </div>
+        <div class="hyp-card" style="border-top-color: #27ae60;">
+            <h4>H3 : Signature Dynamique</h4>
+            <p>L'expertise se manifeste par une entropie du signal réduite et un couplage Force/Vitesse prédictif (Feedforward).</p>
+            <span class="hyp-tag">Script 08</span>
+        </div>
+        <div class="hyp-card" style="border-top-color: #e67e22;">
+            <h4>Plafond de Verre</h4>
+            <p>La surface 2D induit un effet plafond précoce : la performance stagne dès les premières années d'internat.</p>
+            <span class="hyp-tag">Script 10</span>
+        </div>
+    </div>
+
+    <h2 id="partie1">0. Traitement du Signal et Features (<code>process_data.py</code>)</h2>
+    <p>Ce script constitue le moteur fondamental de l'étude. Il sécurise les données brutes et calcule les biomarqueurs.</p>
+
+    <details>
+        <summary>Processus de Nettoyage</summary>
+        <ul>
+            <li><b>Filtre passe-bas :</b> Butterworth d'ordre 2 avec une fréquence de coupure à 10Hz pour éliminer le bruit électronique.</li>
+            <li><b>Rejet d'artefacts :</b> Exclusion automatique des essais présentant un backtracking supérieur à 15% ou une perte de contact stylet supérieure à 10%.</li>
+        </ul>
+    </details>
+
+    <h2 id="partie2">1. H1 : Efficience Motrice (<code>04_statistical_analysis.py</code>)</h2>
+    <p>Validation de la performance macroscopique selon la Loi de Fitts.</p>
+    <div class="math-box">
+        $$IPe = \frac{IDe}{MT} \quad \text{où} \quad IDe = \log_2\left(\frac{2\pi Re}{4.133 \sigma_R}\right)$$
+    </div>
+
+    <h2 id="partie3">2. H2 : Interaction Haptique (<code>05_Analyse_interaction.py</code>)</h2>
+    <p>Évalue le "coût cognitif" imposé par le paradigme de la double tâche (Suivi spatial + Maintien de pression).</p>
+    <div class="math-box">
+        $$\Delta IPe = IPe_{VP} - IPe_{FVP}$$
+    </div>
+
+    <h2 id="partie4">3. H3 : Signature Dynamique (<code>08_dynamic_signature.py</code>)</h2>
+    <p>Analyse de la structure temporelle du contrôle moteur pour séparer les mécanismes réactifs (Feedback) des modèles internes prédictifs (Feedforward).</p>
+
+    <details>
+        <summary>Calcul de l'Entropie de Shannon (Structure de la variabilité)</summary>
+        <div class="math-box">
+            $$H(X) = -\sum_{i=1}^{n} P(x_i) \log_2 P(x_i)$$
+        </div>
+    </details>
+
+    <details>
+        <summary>Calcul du Délai Force/Vitesse (Lag Relatif)</summary>
+        <div class="math-box">
+            $$Lag_{Relatif}(\%) = \left(\frac{\Delta t}{Duration}\right) \times 100$$
+        </div>
+        <p>Un $Lag$ négatif indique que la modulation de la force anticipe la cinématique du mouvement.</p>
+    </details>
+
+    <h2 id="partie5">4. Modélisations Avancées & Limites du Paradigme</h2>
+    <p>Exploitation visuelle et continue pour démontrer les limites de la simulation 2D.</p>
+
+    <div class="io-container">
+        <div class="io-box io-in"><b>Script 09 (2D Matrix) :</b> Génère un PairPlot multivarié (Entropie vs Lag vs Temps) pour visualiser la superposition des clusters d'expertise.</div>
+        <div class="io-box io-out"><b>Script 10 (Régression) :</b> Calcule le coefficient de corrélation de Pearson entre les biomarqueurs et l'ancienneté médicale estimée (mise en évidence de l'effet plafond, $R^2 \approx 0$).</div>
+    </div>
+
+</body>
+</html>

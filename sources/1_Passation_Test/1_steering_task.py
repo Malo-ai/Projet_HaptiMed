@@ -1,7 +1,7 @@
 import sys, os, math, time, csv, random
 import numpy as np
 from PyQt6.QtWidgets import (QApplication, QWidget, QDialog, QFormLayout, QSpinBox, 
-                             QLineEdit, QDialogButtonBox, QVBoxLayout, QLabel)
+                             QLineEdit, QDialogButtonBox, QVBoxLayout, QLabel, QComboBox, QDoubleSpinBox)
 from PyQt6.QtCore import Qt, QTimer, QPointF
 from PyQt6.QtGui import QPainter, QPen, QColor, QFont, QTabletEvent
 from PyQt6.QtMultimedia import QSoundEffect
@@ -22,10 +22,8 @@ CONFIG = {
     "FORCE_TOLERANCE_PCT": 20, 
     "RAW_MAX": 8192,
     "BASE_THICKNESS": 6,        
-    # --- NOUVEAUX PARAMÈTRES POUR LE FEEDBACK D'ÉPAISSEUR ---
-    "MIN_THICKNESS": 2,         # Épaisseur si la pression est à 0
-    "MAX_THICKNESS": 25,        # Épaisseur si la pression est au max (RAW_MAX)
-    "TEMPS_MAX_ESSAI": 15, 
+    "MIN_THICKNESS": 2,        
+    "MAX_THICKNESS": 25,        
     "TEMPS_REPOS": 3, 
     "TEMPS_PAUSE_LONGUE": 20,
     "REPS_PER_ID": 10,          
@@ -53,12 +51,22 @@ class ConfigDialog(QDialog):
         self.input_tol = QSpinBox()
         self.input_tol.setRange(1, 50)
         self.input_tol.setValue(CONFIG["FORCE_TOLERANCE_PCT"])
-        form.addRow("Tolérance (%) :", self.input_tol)
+        form.addRow("Tolérance Force (%) :", self.input_tol)
         
         self.input_reps = QSpinBox()
         self.input_reps.setRange(1, 100)
         self.input_reps.setValue(CONFIG["REPS_PER_ID"])
         form.addRow("Nbr Répétitions / condition :", self.input_reps)
+
+        self.input_r = QSpinBox()
+        self.input_r.setRange(50, 1500)
+        self.input_r.setValue(TUNNEL_LEVELS[0]["R"])
+        form.addRow("Rayon du cercle (R) :", self.input_r)
+
+        self.input_w = QSpinBox()
+        self.input_w.setRange(1, 200)
+        self.input_w.setValue(TUNNEL_LEVELS[0]["W"])
+        form.addRow("Largeur du tunnel (W) :", self.input_w)
         
         layout.addLayout(form)
         btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
@@ -71,8 +79,155 @@ class ConfigDialog(QDialog):
             "ID": self.input_id.text().strip(), 
             "TARGET": self.input_target.value(), 
             "TOL_PCT": self.input_tol.value(),
-            "REPS": self.input_reps.value()
+            "REPS": self.input_reps.value(),
+            "R": self.input_r.value(),     
+            "W": self.input_w.value()      
         }
+
+# --- ÉTAPE 1.5 : QUESTIONNAIRE PROFIL PARTICIPANT ---
+class DemographicsDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Profil du Participant")
+        self.setMinimumWidth(450)
+        layout = QVBoxLayout()
+        self.form = QFormLayout()
+
+        self.input_age = QSpinBox()
+        self.input_age.setRange(18, 99)
+        self.input_age.setValue(25)
+        self.form.addRow("Âge :", self.input_age)
+
+        self.input_hand = QComboBox()
+        self.input_hand.addItems(["Droitier", "Gaucher", "Ambidextre"])
+        self.form.addRow("Main dominante :", self.input_hand)
+
+        self.input_sleep = QDoubleSpinBox()
+        self.input_sleep.setRange(0.0, 24.0)
+        self.input_sleep.setSingleStep(0.5)
+        self.input_sleep.setValue(8.0)
+        self.form.addRow("Heures de sommeil (dernière nuit) :", self.input_sleep)
+
+        self.input_coffee = QSpinBox()
+        self.input_coffee.setRange(0, 20)
+        self.form.addRow("Tasses de café (dernières 24h) :", self.input_coffee)
+
+        self.input_fatigue = QSpinBox()
+        self.input_fatigue.setRange(0, 10)
+        self.form.addRow("Niveau de fatigue (0 = En forme, 10 = Épuisé) :", self.input_fatigue)
+
+        self.input_vg = QComboBox()
+        self.input_vg.addItems(["jamais", "occasionnellement", "regulierement", "quotidiennement"])
+        self.form.addRow("Habitudes jeux vidéo :", self.input_vg)
+
+        line = QWidget()
+        line.setFixedHeight(2)
+        line.setStyleSheet("background-color: #bdc3c7; margin-top: 10px; margin-bottom: 10px;")
+        self.form.addRow(line)
+
+        self.input_status = QComboBox()
+        self.input_status.addItems(["Sélectionner...", "Interne", "Externe", "Non domaine médical"])
+        self.form.addRow("Statut professionnel :", self.input_status)
+
+        self.input_interne_type = QComboBox()
+        self.input_interne_type.addItems(["Sélectionner...", "Apprentissage", "Diplômé"])
+        self.row_interne_type = self.form.addRow("Niveau Interne :", self.input_interne_type)
+
+        self.input_annee = QComboBox()
+        self.input_annee.addItems([f"{i}eme annee" for i in range(1, 7)]) 
+        self.row_annee = self.form.addRow("Année d'apprentissage :", self.input_annee)
+
+        self.input_pratique = QComboBox()
+        self.input_pratique.addItems(["1 a 3 ans", "4 a 6 ans", "7 a 10 ans", "10 a 15 ans", "plus de 15 ans"]) 
+        self.row_pratique = self.form.addRow("En pratique depuis :", self.input_pratique)
+
+        self.input_has_spec = QComboBox()
+        self.input_has_spec.addItems(["non", "oui"])
+        self.row_has_spec = self.form.addRow("Avez-vous une spécialité ?", self.input_has_spec)
+
+        self.input_spec_name = QLineEdit()
+        self.input_spec_name.setPlaceholderText("ex: cardiologie")
+        self.row_spec_name = self.form.addRow("Spécialité :", self.input_spec_name)
+
+        self.input_autre = QLineEdit()
+        self.input_autre.setPlaceholderText("ex: ingenieur")
+        self.row_autre = self.form.addRow("Métier ou domaine :", self.input_autre)
+
+        layout.addLayout(self.form)
+        self.btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        self.btns.accepted.connect(self.accept)
+        layout.addWidget(self.btns)
+        self.setLayout(layout)
+
+        self.input_status.currentIndexChanged.connect(self.update_ui)
+        self.input_interne_type.currentIndexChanged.connect(self.update_ui)
+        self.input_has_spec.currentIndexChanged.connect(self.update_ui)
+        self.update_ui()
+
+    def set_row_visible(self, widget, visible):
+        widget.setVisible(visible)
+        self.form.labelForField(widget).setVisible(visible)
+
+    def update_ui(self):
+        self.set_row_visible(self.input_interne_type, False)
+        self.set_row_visible(self.input_annee, False)
+        self.set_row_visible(self.input_pratique, False)
+        self.set_row_visible(self.input_has_spec, False)
+        self.set_row_visible(self.input_spec_name, False)
+        self.set_row_visible(self.input_autre, False)
+
+        status = self.input_status.currentText()
+        self.btns.button(QDialogButtonBox.StandardButton.Ok).setEnabled(status != "Sélectionner...")
+
+        if status == "Interne":
+            self.set_row_visible(self.input_interne_type, True)
+            interne_type = self.input_interne_type.currentText()
+            if interne_type == "Apprentissage":
+                self.set_row_visible(self.input_annee, True)
+                self.set_row_visible(self.input_has_spec, True)
+                if self.input_has_spec.currentText() == "oui":
+                    self.set_row_visible(self.input_spec_name, True)
+            elif interne_type == "Diplômé":
+                self.set_row_visible(self.input_pratique, True)
+                self.set_row_visible(self.input_spec_name, True)
+        elif status == "Externe":
+            self.set_row_visible(self.input_spec_name, True)
+        elif status == "Non domaine médical":
+            self.set_row_visible(self.input_autre, True)
+
+    def get_demographics(self):
+        status = self.input_status.currentText().lower()
+        data = {
+            "age": self.input_age.value(),
+            "lateralite": self.input_hand.currentText().lower(),
+            "sommeil_h": self.input_sleep.value(),
+            "cafe_24h": self.input_coffee.value(),
+            "fatigue_eva": self.input_fatigue.value(),
+            "jeux_video": self.input_vg.currentText().lower(),
+            "statut_principal": status,
+            "sous_statut": "na",
+            "annee_apprentissage": "na",
+            "annees_pratique": "na",
+            "specialite": "na",
+            "autre_domaine": "na"
+        }
+
+        if status == "interne":
+            sous_statut = self.input_interne_type.currentText()
+            data["sous_statut"] = sous_statut.lower() if sous_statut != "Sélectionner..." else "na"
+            if sous_statut == "Apprentissage":
+                data["annee_apprentissage"] = self.input_annee.currentText()
+                if self.input_has_spec.currentText() == "oui":
+                    data["specialite"] = self.input_spec_name.text().strip().lower()
+            elif sous_statut == "Diplômé":
+                data["annees_pratique"] = self.input_pratique.currentText()
+                data["specialite"] = self.input_spec_name.text().strip().lower()
+        elif status == "externe":
+            data["specialite"] = self.input_spec_name.text().strip().lower()
+        elif status == "non domaine médical":
+            data["autre_domaine"] = self.input_autre.text().strip().lower()
+
+        return data
 
 # --- ÉTAPE 2 : CONSIGNES SPÉCIFIQUES ---
 class InstructionDialog(QDialog):
@@ -101,19 +256,21 @@ class InstructionDialog(QDialog):
             instr += "• Un trait suivra votre stylet.<br>"
             instr += "• Si vous sortez du tunnel, le tracé devient <b style='color:red;'>ROUGE</b>.<br>"
             if task_type == "FVP":
-                # --- NOUVELLES CONSIGNES D'ÉPAISSEUR ---
                 instr += "• Le tracé reste <b style='color:green;'>VERT</b> si vous êtes dans le tunnel.<br>"
                 instr += "• <b style='color:purple;'>NOUVEAUTÉ : L'épaisseur du trait dépend de votre force.</b><br>"
                 instr += "• Pression forte = Trait épais.<br>"
                 instr += "• Pression faible = Trait fin.<br>"
                 instr += "• Essayez de maintenir un trait d'épaisseur régulière, correspondant à la force demandée au départ.<br>"
+                instr += "• <b style='color:#2980b9;'>Une JAUGE apparaîtra au centre pour vous aider à maintenir la force cible.</b><br>"
             else:
                 instr += "• Tracé correct = <b style='color:green;'>VERT</b>.<br>"
         else:
             instr += "• <i style='color:#c0392b;'>Attention : Il n'y aura aucun trait de couleur pour vous aider.</i><br>"
             instr += "• Vous ne verrez que le pointeur de votre stylet.<br>"
             if task_type == "FVP":
-                instr += "• Fiez-vous à vos sensations physiques pour maintenir la force mémorisée au départ.<br>"
+                instr += "• <b style='color:#27ae60;'>Remémorez-vous la force appliquée pour que la croix devienne verte au départ.</b><br>"
+                instr += "• La JAUGE de force disparaîtra au moment du départ (GO!).<br>"
+                instr += "• Fiez-vous à vos sensations physiques pour maintenir cette même force tout au long du mouvement.<br>"
 
         desc = QLabel(instr)
         desc.setWordWrap(True)
@@ -127,12 +284,19 @@ class InstructionDialog(QDialog):
 
 # --- ÉTAPE 3 : L'EXPÉRIENCE ---
 class SteeringExpe(QWidget):
-    def __init__(self, s):
+    def __init__(self, s, demo_data):
         super().__init__()
-        self.pid = s["ID"] if s["ID"] else "TEST"
+        raw_id = s["ID"] if s["ID"] else "TEST"
+        self.pid = raw_id.replace('/', '-') 
+        
         CONFIG["TARGET_RAW"] = s["TARGET"]
         CONFIG["FORCE_TOLERANCE_PCT"] = s["TOL_PCT"]
         CONFIG["REPS_PER_ID"] = s["REPS"]
+        
+        self.save_demographics(self.pid, demo_data)
+
+        TUNNEL_LEVELS[0]["R"] = s["R"]
+        TUNNEL_LEVELS[0]["W"] = s["W"]
         
         margin = CONFIG["TARGET_RAW"] * (CONFIG["FORCE_TOLERANCE_PCT"] / 100.0)
         self.f_min = CONFIG["TARGET_RAW"] - margin; self.f_max = CONFIG["TARGET_RAW"] + margin
@@ -167,27 +331,30 @@ class SteeringExpe(QWidget):
         self.timer = QTimer(self); self.timer.timeout.connect(self.game_loop); self.timer.start(8)
         self.prev_t = time.perf_counter(); self.prev_pos = QPointF(0,0)
 
+    def save_demographics(self, pid, demo_data):
+        path = os.path.join(DATA_RAW_PATH, f"{pid}_INFO.csv")
+        headers = ["ID"] + list(demo_data.keys())
+        row = [pid] + list(demo_data.values())
+        
+        with open(path, 'w', newline='', encoding='utf-8') as f:
+            w = csv.writer(f)
+            w.writerow(headers)
+            w.writerow(row)
+
     def tabletEvent(self, e: QTabletEvent):
         self.pressure = e.pressure(); self.pos = e.position(); e.accept()
 
-    # --- MODIFICATION DE LA COULEUR ---
     def get_pointer_color(self, px, py, R, W):
         dist_c = math.sqrt((px - self.width()/2)**2 + (py - self.height()/2)**2)
         erreur_radiale = abs(dist_c - R)
-        
-        # Le trait devient toujours rouge si on sort du tunnel, 
-        # sinon il reste vert. On n'utilise plus bleu/orange pour la force.
         if erreur_radiale > (W / 2): return Qt.GlobalColor.red 
         return Qt.GlobalColor.green
 
-    # --- NOUVELLE FONCTION POUR CALCULER L'ÉPAISSEUR ---
-    def get_pointer_thickness(self, pressure, task_type):
-        if task_type == "FVP":
-            # Calcule l'épaisseur en fonction de la pression (0.0 à 1.0)
+    def get_pointer_thickness(self, pressure, task_type, has_feedback):
+        if task_type == "FVP" and has_feedback:
             thickness_range = CONFIG["MAX_THICKNESS"] - CONFIG["MIN_THICKNESS"]
             return CONFIG["MIN_THICKNESS"] + (pressure * thickness_range)
         else:
-            # Si c'est juste VP, le trait a une épaisseur constante
             return CONFIG["BASE_THICKNESS"]
 
     def game_loop(self):
@@ -217,8 +384,7 @@ class SteeringExpe(QWidget):
                     self.go_timer = t
                     
         elif self.state == "RECORDING":
-            if t - self.start_trial_time > CONFIG["TEMPS_MAX_ESSAI"]: self.end_trial(timeout=True)
-            else: self.collect_data(t)
+            self.collect_data(t)
             
         elif self.state == "REST":
             if t - self.timer_state >= CONFIG["TEMPS_REPOS"]: self.next_step()
@@ -232,9 +398,9 @@ class SteeringExpe(QWidget):
         px, py = self.pos.x(), self.pos.y(); cx, cy = self.width()/2, self.height()/2
         R = self.sequence[self.seq_index]["R"]; W = self.sequence[self.seq_index]["W"]
         task_type = self.sequence[self.seq_index]["Task"]
+        has_feedback = self.sequence[self.seq_index]["Feedback"]
         
-        # --- CALCUL DE L'ÉPAISSEUR DYNAMIQUE ---
-        thickness = self.get_pointer_thickness(self.pressure, task_type)
+        thickness = self.get_pointer_thickness(self.pressure, task_type, has_feedback)
         
         if not self.movement_started:
             dt = t - self.prev_t
@@ -247,7 +413,6 @@ class SteeringExpe(QWidget):
         in_t = 1 if erreur_radiale <= (W / 2) else 0 
         angle = math.atan2(py - cy, px - cx)
         
-        # On ne passe plus la pression à get_pointer_color
         col = self.get_pointer_color(px, py, R, W)
         
         self.buffer_raw.append([t, t-self.actual_start_t, px, py, self.pressure * CONFIG["RAW_MAX"], thickness, erreur_radiale, in_t, angle])
@@ -261,7 +426,7 @@ class SteeringExpe(QWidget):
     def safe_save(self, base_name, data_list, header):
         path = os.path.join(DATA_RAW_PATH, base_name)
         file_exists = os.path.isfile(path) and os.path.getsize(path) > 0
-        with open(path, 'a', newline='') as f:
+        with open(path, 'a', newline='', encoding='utf-8') as f:
             w = csv.writer(f)
             if not file_exists: w.writerow(header)
             w.writerows(data_list)
@@ -341,9 +506,21 @@ class SteeringExpe(QWidget):
                 p1, th1, col1 = self.current_trajectory[i-1]; p2, th2, col2 = self.current_trajectory[i]
                 p.setPen(QPen(col1, th1, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)); p.drawLine(p1, p2)
             
-        if self.state in ["WAIT_POS", "COUNTDOWN", "RECORDING"]:
+        if self.state in ["WAIT_POS", "COUNTDOWN"]:
             sy = cy + R; current_force = self.pressure * CONFIG["RAW_MAX"]
             dist = math.sqrt((self.pos.x()-cx)**2 + (self.pos.y()-sy)**2)
+            
+            if task_type == "FVP":
+                p.setBrush(QColor(30, 30, 30, 200)) 
+                p.setPen(Qt.GlobalColor.white)
+                p.drawRect(20, 80, 280, 80)
+                
+                p.setFont(QFont("Arial", 16, QFont.Weight.Bold))
+                p.drawText(35, 110, f"Cible à trouver : {CONFIG['TARGET_RAW']}")
+                
+                is_good_force = (self.f_min <= current_force <= self.f_max)
+                p.setPen(Qt.GlobalColor.green if is_good_force else Qt.GlobalColor.red)
+                p.drawText(35, 140, f"Pression actuelle : {int(current_force)}")
             
             p.setPen(QPen(Qt.GlobalColor.gray, 2))
             p.drawLine(QPointF(cx-15, sy), QPointF(cx+15, sy)); p.drawLine(QPointF(cx, sy-15), QPointF(cx, sy+15))
@@ -361,12 +538,76 @@ class SteeringExpe(QWidget):
                 p.setFont(QFont("Arial", 120, QFont.Weight.Bold))
                 p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, str(self.cd_val))
                 
-            if self.state == "RECORDING" and hasattr(self, 'go_timer') and (time.perf_counter() - self.go_timer < 1.0):
-                p.setPen(Qt.GlobalColor.green); p.setFont(QFont("Arial", 120, QFont.Weight.Bold))
-                p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "GO !")
-        
-        # --- MISE À JOUR DE L'AFFICHAGE DU POINTEUR EN DIRECT ---
-        current_th = self.get_pointer_thickness(self.pressure, task_type)
+        if self.state == "RECORDING" and hasattr(self, 'go_timer') and (time.perf_counter() - self.go_timer < 1.0):
+            p.setPen(Qt.GlobalColor.green); p.setFont(QFont("Arial", 120, QFont.Weight.Bold))
+            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "GO !")
+
+        # ==============================================================
+        # --- NOUVEAUTÉ : DESSIN DE LA JAUGE DE FORCE AU CENTRE ---
+        # ==============================================================
+        show_gauge = False
+        if task_type == "FVP":
+            if has_feedback:
+                if self.state in ["WAIT_POS", "COUNTDOWN", "RECORDING"]:
+                    show_gauge = True
+            else:
+                if self.state in ["WAIT_POS", "COUNTDOWN"]:
+                    show_gauge = True
+
+        if show_gauge:
+            current_force = self.pressure * CONFIG["RAW_MAX"]
+            gauge_w = 40
+            gauge_h = int(R * 1.2) # La hauteur s'adapte pour rester toujours à l'intérieur du cercle
+            gauge_x = cx - (gauge_w / 2) # Centré horizontalement
+            gauge_y = cy - (gauge_h / 2) # Centré verticalement
+            
+            target_f = CONFIG["TARGET_RAW"]
+            max_f = target_f * 2.0 
+            
+            # 1. Fond de la jauge (gris sombre, légèrement transparent)
+            p.setBrush(QColor(50, 50, 50, 180))
+            p.setPen(QPen(Qt.GlobalColor.white, 2))
+            p.drawRect(int(gauge_x), int(gauge_y), int(gauge_w), int(gauge_h))
+            
+            # 2. Remplissage de la force
+            fill_h = min(gauge_h, (current_force / max_f) * gauge_h) 
+            fill_y = gauge_y + gauge_h - fill_h 
+            
+            if self.f_min <= current_force <= self.f_max:
+                fill_color = QColor(46, 204, 113) # Vert (Parfait)
+            elif current_force > self.f_max:
+                fill_color = QColor(231, 76, 60)  # Rouge (Trop fort)
+            else:
+                fill_color = QColor(241, 196, 15) # Jaune (Trop faible)
+                
+            p.setBrush(fill_color)
+            p.setPen(Qt.PenStyle.NoPen)
+            p.drawRect(int(gauge_x), int(fill_y), int(gauge_w), int(fill_h))
+            
+            # 3. Dessin de la zone cible (Cyan)
+            zone_y_max = gauge_y + gauge_h - (self.f_min / max_f) * gauge_h
+            zone_y_min = gauge_y + gauge_h - (self.f_max / max_f) * gauge_h
+            zone_h = zone_y_max - zone_y_min
+            
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.setPen(QPen(Qt.GlobalColor.cyan, 3))
+            p.drawRect(int(gauge_x - 5), int(zone_y_min), int(gauge_w + 10), int(zone_h))
+            
+            # 4. Ligne cible centrale
+            center_y = gauge_y + gauge_h / 2
+            p.setPen(QPen(Qt.GlobalColor.white, 2, Qt.PenStyle.DashLine))
+            p.drawLine(int(gauge_x - 10), int(center_y), int(gauge_x + gauge_w + 10), int(center_y))
+            
+            # 5. Étiquettes
+            p.setPen(Qt.GlobalColor.white)
+            p.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+            p.drawText(int(cx - 35), int(gauge_y - 15), "FORCE")
+            
+            p.setFont(QFont("Arial", 10, QFont.Weight.Bold))
+            p.drawText(int(gauge_x + gauge_w + 15), int(center_y + 5), "CIBLE")
+        # ==============================================================
+
+        current_th = self.get_pointer_thickness(self.pressure, task_type, has_feedback)
         col_pointer = self.get_pointer_color(self.pos.x(), self.pos.y(), R, W) if has_feedback else Qt.GlobalColor.lightGray
         
         p.setBrush(col_pointer); p.setPen(QPen(Qt.GlobalColor.black, 1))
@@ -382,12 +623,18 @@ class SteeringExpe(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    d = ConfigDialog()
-    if d.exec():
-        settings = d.get_settings()
-        ex = SteeringExpe(settings)
-        first = ex.sequence[0]
-        instr = InstructionDialog(first['Task'], first['Feedback'], is_first=True)
-        instr.exec()
-        ex.show()
-        sys.exit(app.exec())
+    
+    d_config = ConfigDialog()
+    if d_config.exec():
+        settings = d_config.get_settings()
+        
+        d_demo = DemographicsDialog()
+        if d_demo.exec():
+            demo_data = d_demo.get_demographics()
+            
+            ex = SteeringExpe(settings, demo_data)
+            first = ex.sequence[0]
+            instr = InstructionDialog(first['Task'], first['Feedback'], is_first=True)
+            instr.exec()
+            ex.show()
+            sys.exit(app.exec())

@@ -1,55 +1,44 @@
-🎯 HaptiMed : Évaluation de l'Expertise Chirurgicale
-Ce projet de recherche vise à discriminer le niveau d'expertise (Novices vs Experts) en comparant l'ancienneté clinique aux performances biomécaniques quantitatives. Nous utilisons une tâche de pilotage circulaire (Steering Task) modélisée selon la loi d'Accot et Zhai (dérivée de la loi de Fitts), en y intégrant des contraintes haptiques.
+# 🎯 HaptiMed: Evaluation of Surgical Expertise
 
-Auteur : Malo Bertrand--Goarin
+This research project aims to discriminate the level of clinical expertise (Novices vs. Experts) in endonasal surgery through the analysis of kinematic and haptic biomarkers. It relies on an instrumented steering task (Accot and Zhai's Steering Task) modified to include axial force constraints.
 
-Cours : Engineering and Ergonomics of Physical Activity
+**Author:** Malo Bertrand--Goarin  
+**Program:** Master 2 in Training Engineering and Performance Optimization (DigiMov Track)  
+**Laboratory:** EuroMov Digital Health in Motion (Univ. Montpellier / CHU Guy de Chauliac)  
+**GitHub Link:** https://github.com/Malo-ai/Projet_HaptiMed
 
-Lien GitHub : [Lien vers ton repository public]
+---
 
-📂 Structure du Projet (Safe Logic)
-Le dépôt est organisé selon la structure imposée pour garantir la portabilité et la clarté de l'analyse :
+## 📂 Project Structure (Safe Logic)
 
-Bertrand--Goarin.Malo.html : Rapport de projet auto-suffisant présentant la question scientifique, les méthodes et les résultats.
+The repository architecture guarantees process isolation (acquisition vs. processing) and total reproducibility of the analyses:
 
-main.py : Point d'entrée unique permettant d'exécuter l'intégralité du pipeline d'analyse.
+* **`main.py`**: Main orchestrator. A single entry point that executes the entire analysis and report generation pipeline.
+* **`environment.yml`**: File to replicate the exact Conda environment (PyQt6, Scipy, Scikit-Learn, FPDF, etc.).
+* **`data/`**: Contains raw tablet data (`raw/`), filtered data (`clean/`), and descriptor matrices (`features/`).
+* **`doc/` & `Paper_intervention/`**: Auto-generated HTML reports and administrative PDF forms (consent, information sheets).
+* **`results/`**: Centralized storage for all generated charts (H1, H2, H3) and inferential statistics tables (APA standards).
+* **`sources/`**: The core source code, divided into logical clusters:
+    * `/1_Passation_Test`: Graphical Interface (PyQt6) for 120 Hz acquisition and MVC calibration.
+    * `/2_Clean_Data`: Butterworth filtering and kinematic metrics extraction (Jerk, IPe).
+    * `/3_Process_Stat`: Hypothesis validation (Mann-Whitney) and Machine Learning models.
+    * `/4_Paper`: Scripts to generate technical documentation and PDFs.
 
-environment.yml : Fichier de configuration pour recréer l'environnement Conda et installer les dépendances (Scipy, Scikit-Learn, FPDF, etc.).
+---
 
-readme.md : Ce fichier de documentation.
+## 🧬 Scientific Hypotheses Evaluated
 
-LICENCE : Licence de distribution du code.
+1.  **H1 - Macroscopic Efficiency:** Validation of the effective Performance Index (IPe) as a baseline discriminator between naive subjects and medical personnel.
+2.  **H2 - The Cost of Force (Asymmetry):** Adding a haptic constraint (FVP dual task) disproportionately degrades the accuracy of novices compared to experts.
+3.  **H3 - The Dynamic Signature (3D Coupling):** Experts possess a proactive internal model (*feedforward*) resulting in a highly compact and repeatable 3D interference volume (Space x Force).
 
-📁 sources/ : Répertoire contenant les scripts et fonctions modulaires.
+---
 
-🧪 Passation_Test/ : Acquisition sub-pixel à 120 Hz et calibration MVC.
+## 🚀 Installation and Execution
 
-🧹 Clean_Data/ : Filtrage de Butterworth d'ordre 2 et calcul des métriques ISO 9241-9.
+This pipeline is designed to be portable and fully automated (Windows, Mac, Linux).
 
-📊 Process_Stat/ : Analyse statistique inférentielle et classification par Random Forest.
-
-📄 Paper/ : Scripts de génération des rapports et kits administratifs.
-
-📁 data/ : Données brutes (raw/) et traitées (clean/).
-
-📁 results/ : Sorties graphiques, tableaux APA et documentation technique.
-
-📁 notebooks/ : Analyses exploratoires complémentaires.
-
-🚀 Installation et Exécution
-Le projet est conçu pour fonctionner sur n'importe quel système (Win, Mac, Unix).
-
-Recréer l'environnement :
-
-Bash
+### 1. Environment Preparation
+```bash
 conda env create -f environment.yml
 conda activate env_haptimed
-Lancer le pipeline complet :
-Exécutez la commande suivante à la racine pour traiter les données, générer les statistiques et produire le rapport final :
-
-Bash
-python main.py
-
-🧪 Maîtrise Scientifique et TechniqueCe projet démontre l'acquisition des compétences suivantes :Traitement du signal : Échantillonnage à 120 Hz pour respecter le critère de Nyquist-Shannon vis-à-vis du tremblement physiologique et filtrage passe-bas de Butterworth à 10 Hz pour éliminer le bruit électronique.Analyse Statistique : Modélisation par régression linéaire de la Loi de Fitts ($MT = a + b \cdot ID_e$), tests de Welch pour les comparaisons de groupes et calcul de la taille d'effet (Cohen's d).Machine Learning : Utilisation de l'algorithme Random Forest avec validation croisée (LOO) pour quantifier la valeur ajoutée de la force haptique dans la discrimination de l'expertise.
-
-🗺️ Détail des pôles (sources/)1. 🧪 Passation_Test/Gère l'interaction temps-réel avec la tablette graphique via PyQt6. Il enregistre les coordonnées et la pression axiale, cruciale pour l'hypothèse H2 sur la charge haptique.2. 🧹 Clean_Data/Transforme les séries temporelles brutes en variables descriptives. Il calcule notamment le Throughput ($IP_e$) et la fluidité gestuelle via le Log Dimensionless Jerk ($LDLJ$).3. 📊 Process_Stat/Répond aux questions de recherche en produisant des tableaux de résultats conformes aux normes APA et des visualisations (boxplots, scatter plots) pour l'interprétation scientifique.4. 📄 Paper/Automatise la production de la documentation. Le script generate_master_report.py compile les résultats dans le rapport HTML final déposé sur Moodle.Note : Ce projet a été réalisé avec l'assistance de l'IA (Gemini 3 Flash) pour l'optimisation de la structure modulaire et la génération automatisée des rapports.

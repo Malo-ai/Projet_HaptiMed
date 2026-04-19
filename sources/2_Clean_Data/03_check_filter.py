@@ -1,4 +1,5 @@
 import pandas as pd
+import glob 
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import butter, filtfilt
@@ -6,8 +7,15 @@ import os
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))# Choisis un fichier RAW de test qui existe encore
-FILE_PATH = os.path.join(BASE_DIR, "data", "raw", "PILOT_01_RAW.csv") 
+raw_files = glob.glob(os.path.join(BASE_DIR, "data", "raw", "*_RAW.csv"))
 
+if not raw_files:
+    print("Aucun fichier trouvé.")
+else:
+    # Choisis le premier de la liste ou change l'index [0] pour en voir un autre
+    FILE_PATH = raw_files[0] 
+    print(f"Vérification du filtre sur : {os.path.basename(FILE_PATH)}")
+    # ... la suite du code reste identique
 def butter_lowpass_filter(data, cutoff, fs, order=2):
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
@@ -20,8 +28,7 @@ if __name__ == "__main__":
     else:
         df = pd.read_csv(FILE_PATH)
         # On prend un segment de 5 secondes pour bien voir
-        segment = df.head(500) 
-        
+        segment = df.iloc[5000:5500]        
         raw_x = segment['X'].values
         time = segment['Time_Rel'].values
         fs = 1 / np.mean(np.diff(time))

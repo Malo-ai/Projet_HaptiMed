@@ -1,4 +1,11 @@
-<!DOCTYPE html>
+# generate_tech_doc.py - FINAL TECHNICAL AND SCIENTIFIC REPORT
+import os
+
+# --- PATH CONFIGURATION ---
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# --- HTML CONTENT GENERATION ---
+html_content = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -169,3 +176,11 @@
 
 </body>
 </html>
+"""
+
+# --- SAVE TO ROOT ---
+output_file = os.path.join(BASE_DIR, "Bertrand--Goarin.Malo.html")
+with open(output_file, "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+print(f"[SUCCESS] Scientific documentation generated: {output_file}")

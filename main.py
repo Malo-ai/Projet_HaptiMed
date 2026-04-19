@@ -1,49 +1,65 @@
-# main.py - POINT D'ENTRÉE UNIQUE DU PROJET HAPTIMED
+# main.py - GLOBAL ORCHESTRATOR FOR THE HAPTIMED PROJECT
 import os
 import subprocess
 import sys
 
 def run_script(script_path):
-    """Lance un script Python et vérifie s'il s'est bien exécuté."""
-    print(f"\n" + "="*50)
-    print(f"RUNNING: {script_path}")
-    print("="*50)
+    """Runs a Python script and checks if it executed successfully."""
+    print("\n" + "="*60)
+    print(f"🚀 EXECUTING: {script_path}")
+    print("="*60)
     
     try:
-        # On utilise subprocess pour garantir l'isolation et la gestion des erreurs
-        result = subprocess.run([sys.executable, script_path], check=True)
+        # subprocess guarantees memory isolation between each script
+        subprocess.run([sys.executable, script_path], check=True)
         return True
     except subprocess.CalledProcessError as e:
-        print(f"❌ ERREUR fatale dans {script_path}")
-        print(f"Code d'erreur : {e.returncode}")
+        print(f"❌ Fatal ERROR in {script_path}")
+        print(f"Error code: {e.returncode}")
         return False
 
 if __name__ == "__main__":
-    print("🚀 DÉMARRAGE DU PIPELINE HAPTIMED (Master HMS)")
+    print("🌟 STARTING THE COMPLETE HAPTIMED PIPELINE (Master 2)")
     
-    # Liste des scripts dans l'ordre logique de la thèse
-    # Attention : Vérifie que tes dossiers sont bien renommés en 'sources'
+    # Strict definition of the analytical pipeline
+    # (Passation scripts are not run here as they require a human subject)
     pipeline = [
-        "sources/Clean_Data/process_data.py",    # 1. Traitement & Filtrage
-        "sources/Process_Stat/analysis_master.py", # 2. Stats & Graphiques
-        "sources/Process_Stat/analysis_ml.py",     # 3. Machine Learning
-        "sources/Paper/generate_master_report.py"  # 4. Rapport HTML final
+        # 1. Signal processing and biomarker extraction
+        "sources/2_Clean_Data/04_process_data.py",
+        
+        # 2. Statistical and Inferential Analyses (H1, H2, H3)
+        "sources/3_Process_Stat/05_analysis_H1.py",
+        "sources/3_Process_Stat/05_analysis_H2.py",
+        "sources/3_Process_Stat/05_analysis_H3.py",
+        "sources/3_Process_Stat/05_analysis_exploratoire.py",
+        
+        # Note: If you have an analysis_ml.py file, add it here with the correct path
+        # e.g., "sources/3_Process_Stat/analysis_ml.py",
+        
+        # 3. Documentation and PDF generation
+        "sources/4_Paper/generate_tech_doc.py",
+        "sources/4_Paper/kit_complet_pdf.py"
     ]
     
     success_count = 0
     for script in pipeline:
-        if not os.path.exists(script):
-            print(f"⚠️ FICHIER INTROUVABLE : {script}")
-            print("Vérifiez l'organisation de vos dossiers (sources/...)")
+        # Path normalization according to the OS (Windows/Mac)
+        script_path = os.path.normpath(script)
+        
+        if not os.path.exists(script_path):
+            print(f"⚠️ FILE NOT FOUND: {script_path}")
+            print("Check the folder structure in the 'sources/' directory")
             break
             
-        if run_script(script):
+        if run_script(script_path):
             success_count += 1
         else:
-            print("\n⛔ Arrêt du pipeline suite à une erreur.")
+            print("\n⛔ Pipeline stopped due to a technical error.")
             break
 
     if success_count == len(pipeline):
-        print("\n" + "!"*50)
-        print("✅ TOUT EST PRÊT ! Le rapport HTML est disponible.")
-        print("!"*50)
+        print("\n" + "!"*60)
+        print("✅ PIPELINE SUCCESSFULLY COMPLETED!")
+        print("All charts, statistics, and reports have been generated.")
+        print("Check the 'results/', 'doc/', and 'Paper_intervention/' folders.")
+        print("!"*60)
