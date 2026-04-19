@@ -11,6 +11,7 @@ dependencies:
   - seaborn
   - scikit-learn
   - openpyxl
+  - pyqt6
   - pip
   - pip:
-  - fpdf
+    - fpdf
